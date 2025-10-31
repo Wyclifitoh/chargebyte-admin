@@ -75,7 +75,9 @@ export default function LogsPage() {
     return 'bg-gray-100 text-gray-700';
   };
 
-  const uniqueActions = [...new Set(mockLogs.map(log => log.action))];
+  // const uniqueActions = [...new Set(mockLogs.map(log => log.action))];
+  const uniqueActions = Array.from(new Set(mockLogs.map(log => log.action)));
+
 
   return (
     <div className="space-y-6 animate-fade-in">

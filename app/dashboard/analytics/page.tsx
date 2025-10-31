@@ -22,7 +22,8 @@ import {
   ResponsiveContainer,
   Legend,
   Area,
-  AreaChart
+  AreaChart,
+  PieLabelRenderProps
 } from 'recharts';
 import { 
   TrendingUp,
@@ -266,7 +267,12 @@ export default function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  label={(props: PieLabelRenderProps) => {
+                    const { name } = props;
+                    const percent = (props as any).percent as number; // cast to fix TS
+                    return `${name}: ${(percent * 100).toFixed(1)}%`;
+                  }}
+
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
