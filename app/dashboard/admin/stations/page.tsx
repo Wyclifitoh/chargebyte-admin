@@ -185,8 +185,8 @@ export default function StationsPage() {
             <Building2 className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            {/* {mockStations.length} */}
-            <div className="text-2xl font-bold">50</div>
+            
+            <div className="text-2xl font-bold">{mockStations.length}</div>
             <p className="text-xs text-gray-600">network-wide</p>
           </CardContent>
         </Card>
@@ -198,8 +198,8 @@ export default function StationsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              31
-              {/* {mockStations.filter(s => s.status === 'active').length} */}
+              
+              {mockStations.filter(s => s.status === 'active').length}
             </div>
             <p className="text-xs text-gray-600">currently operational</p>
           </CardContent>
@@ -212,8 +212,8 @@ export default function StationsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {/* {mockStations.reduce((sum, s) => sum + s.totalSlots, 0)} */}
-              1204
+              {mockStations.reduce((sum, s) => sum + s.totalSlots, 0)}
+              {/* 1204 */}
             </div>
             <p className="text-xs text-gray-600">charging slots</p>
           </CardContent>
@@ -226,8 +226,8 @@ export default function StationsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {/* {mockStations.reduce((sum, s) => sum + s.availableSlots, 0)} */}
-              640
+              {mockStations.reduce((sum, s) => sum + s.availableSlots, 0)}
+              {/* 640 */}
             </div>
             <p className="text-xs text-gray-600">ready for rental</p>
           </CardContent>
