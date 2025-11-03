@@ -32,12 +32,38 @@ export default function AdminDashboardPage() {
   }
 
   // --- FILTER ORDERS FOR THIS MONTH ---
+  const now = new Date();
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
+  // const monthlyOrders = mockOrders.filter(order => {
+  //   const date = new Date(order.rentalStartTime);
+  //   return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+  // });
+
   const monthlyOrders = mockOrders.filter(order => {
-    const date = new Date(order.rentalStartTime);
-    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-  });
+  const orderDate = new Date(order.rentalStartTime);
+
+  // 1️⃣ Must be same year and month
+  if (orderDate.getMonth() !== currentMonth || orderDate.getFullYear() !== currentYear) {
+    return false;
+  }
+
+  // 2️⃣ If it's today, ensure it's not in the future (no later than current time)
+  if (
+    orderDate.getDate() === now.getDate() &&
+    orderDate.getHours() >= now.getHours() &&
+    orderDate.getMinutes() > now.getMinutes()
+  ) {
+    return false;
+  }
+
+  // 3️⃣ Must not be a future date in this month
+  if (orderDate > now) {
+    return false;
+  }
+
+  return true;
+});
 
   // --- DASHBOARD METRICS ---
   const totalStations = mockStations.length;

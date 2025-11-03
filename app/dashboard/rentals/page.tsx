@@ -57,13 +57,31 @@ const visibleStations = hasPermission(['location_partner']) && user?.role === 'l
   });
 
   // Then filter to **only this month's** orders
-  const filteredOrders = baseFilteredOrders.filter(order => {
-    const orderDate = new Date(order.rentalStartTime);
-    return (
-      orderDate.getMonth() === currentMonth &&
-      orderDate.getFullYear() === currentYear
-    );
-  });
+  // const filteredOrders = baseFilteredOrders.filter(order => {
+  //   const orderDate = new Date(order.rentalStartTime);
+  //   return (
+  //     orderDate.getMonth() === currentMonth &&
+  //     orderDate.getFullYear() === currentYear
+  //   );
+  // });
+
+  // Then filter to **only this month's** orders up to current time
+const filteredOrders = baseFilteredOrders.filter(order => {
+  const orderDate = new Date(order.rentalStartTime);
+
+  // Must be in the same month and year
+  if (orderDate.getMonth() !== currentMonth || orderDate.getFullYear() !== currentYear) {
+    return false;
+  }
+
+  // Exclude orders beyond current time (today’s future)
+  if (orderDate > now) {
+    return false;
+  }
+
+  return true;
+});
+
 
   // Compute metrics for this month
   const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.totalAmount, 0);

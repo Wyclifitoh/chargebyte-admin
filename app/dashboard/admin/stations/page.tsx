@@ -251,7 +251,7 @@ export default function StationsPage() {
                 <TableHead>Region</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Slots</TableHead>
-                <TableHead>Revenue</TableHead>
+                {/* <TableHead>Revenue</TableHead> */}
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -276,7 +276,7 @@ export default function StationsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell>{station.availableSlots}/{station.totalSlots}</TableCell>
-                  <TableCell>${station.revenue.toFixed(2)}</TableCell>
+                  {/* <TableCell>${station.revenue.toFixed(2)}</TableCell> */}
                   <TableCell>
                     <div className="flex space-x-2">
                       <Button
