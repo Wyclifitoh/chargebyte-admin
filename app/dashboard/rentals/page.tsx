@@ -220,7 +220,7 @@ const visibleStations = hasPermission(['location_partner']) && user?.role === 'l
       </div>
 
       {/* Stations Overview */}
-      <Card>
+      <Card className='hidden'>
         <CardHeader>
           <CardTitle>Station Overview</CardTitle>
           <CardDescription>Monitor all charging stations and their performance</CardDescription>
