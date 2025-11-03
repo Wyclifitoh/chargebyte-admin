@@ -31,25 +31,51 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // Calculate admin metrics
+  // --- FILTER ORDERS FOR THIS MONTH ---
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthlyOrders = mockOrders.filter(order => {
+    const date = new Date(order.rentalStartTime);
+    return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+  });
+
+  // --- DASHBOARD METRICS ---
   const totalStations = mockStations.length;
   const activeStations = mockStations.filter(s => s.status === 'active').length;
+
   const totalUsers = mockUsers.length;
   const activeUsers = mockUsers.filter(u => u.status === 'active').length;
-  const totalRevenue = mockStations.reduce((sum, station) => sum + station.revenue, 0);
-  const totalRentals = mockStations.reduce((sum, station) => sum + station.rentals, 0);
+
+  // Revenue & rentals based on orders
+  const totalRevenue = monthlyOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalRentals = monthlyOrders.length;
+
+  const totalCompleted = monthlyOrders.filter(o => o.rentalStatus === 'completed').length;
+  const ongoingRentals = monthlyOrders.filter(o => o.rentalStatus === 'ongoing').length;
+
   const recentLogs = mockLogs.slice(0, 5);
   const warningLogs = mockLogs.filter(log => log.severity === 'warning').length;
 
-  // Mock system health data
+  // --- SYSTEM HEALTH MOCK DATA ---
   const systemHealthData = [
-    { name: 'CPU Usage', value: 45, status: 'good' },
-    { name: 'Memory Usage', value: 67, status: 'warning' },
-    { name: 'Disk Usage', value: 23, status: 'good' },
-    { name: 'Network', value: 89, status: 'good' }
+    { name: 'CPU Usage', value: 42, status: 'good' },
+    { name: 'Memory Usage', value: 65, status: 'warning' },
+    { name: 'Disk Usage', value: 29, status: 'good' },
+    { name: 'Network', value: 83, status: 'good' }
   ];
 
-  // Recent activity data for chart
+  // --- ACTIVITY DATA FROM ORDERS ---
+  // Count rentals by 4-hour intervals
+  const activityBuckets = [
+    { time: '00:00', users: 0, rentals: 0 },
+    { time: '04:00', users: 0, rentals: 0 },
+    { time: '08:00', users: 0, rentals: 0 },
+    { time: '12:00', users: 0, rentals: 0 },
+    { time: '16:00', users: 0, rentals: 0 },
+    { time: '20:00', users: 0, rentals: 0 }
+  ];
+
+    // Recent activity data for chart
   const activityData = [
     { time: '00:00', users: 12, rentals: 8 },
     { time: '04:00', users: 8, rentals: 5 },
@@ -58,6 +84,15 @@ export default function AdminDashboardPage() {
     { time: '16:00', users: 89, rentals: 62 },
     { time: '20:00', users: 56, rentals: 41 }
   ];
+
+  monthlyOrders.forEach(order => {
+    const hour = new Date(order.rentalStartTime).getHours();
+    const bucketIndex = Math.floor(hour / 4);
+    if (activityBuckets[bucketIndex]) {
+      activityBuckets[bucketIndex].rentals += 1;
+      activityBuckets[bucketIndex].users += 1;
+    }
+  });
 
   const getHealthColor = (status: string) => {
     switch (status) {
@@ -76,6 +111,7 @@ export default function AdminDashboardPage() {
       default: return 'bg-gray-500';
     }
   };
+
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -184,7 +220,7 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={activityData}>
+              <LineChart data={activityBuckets}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="time" />
                 <YAxis />

@@ -36,11 +36,18 @@ export default function RentalsPage() {
   const [showStationDetail, setShowStationDetail] = useState<string | null>(null);
 
   // Filter data based on user role
-  const visibleStations = hasPermission(['location_partner']) && user?.role === 'location_partner'
-    ? mockStations.filter(station => station.partner === 'MallCorp Ltd') // Mock: partner-specific data
-    : mockStations;
+ // Filter data based on user role
+const visibleStations = hasPermission(['location_partner']) && user?.role === 'location_partner'
+  ? mockStations.filter(station => station.partner === 'MallCorp Ltd') 
+  : mockStations;
 
-  const filteredOrders = mockOrders.filter(order => {
+  // Get current month and year
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  // Filter orders first by user selection and search
+  const baseFilteredOrders = mockOrders.filter(order => {
     const matchesStation = selectedStation === 'all' || order.machineId === selectedStation;
     const matchesStatus = statusFilter === 'all' || order.rentalStatus === statusFilter;
     const matchesSearch = searchTerm === '' || 
@@ -49,10 +56,57 @@ export default function RentalsPage() {
     return matchesStation && matchesStatus && matchesSearch;
   });
 
-  const totalRevenue = visibleStations.reduce((sum, station) => sum + station.revenue, 0);
-  const totalRentals = visibleStations.reduce((sum, station) => sum + station.rentals, 0);
-  const totalCustomers = visibleStations.reduce((sum, station) => sum + station.customers, 0);
+  // Then filter to **only this month's** orders
+  const filteredOrders = baseFilteredOrders.filter(order => {
+    const orderDate = new Date(order.rentalStartTime);
+    return (
+      orderDate.getMonth() === currentMonth &&
+      orderDate.getFullYear() === currentYear
+    );
+  });
+
+  // Compute metrics for this month
+  const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const totalRentals = filteredOrders.length;
+  const totalCustomers = new Set(filteredOrders.map(order => order.customerId)).size;
   const activeStations = visibleStations.filter(s => s.status === 'active').length;
+
+  // Prepare data for charts - group by day
+  interface DailyStats {
+    [key: string]: { date: string; rentals: number; revenue: number };
+  }
+  const dailyStats: DailyStats = {};
+  filteredOrders.forEach(order => {
+    const dateKey = new Date(order.rentalStartTime).toISOString().slice(0, 10);
+    if (!dailyStats[dateKey]) {
+      dailyStats[dateKey] = { date: dateKey, rentals: 0, revenue: 0 };
+    }
+    dailyStats[dateKey].rentals += 1;
+    dailyStats[dateKey].revenue += order.totalAmount;
+  });
+
+  const chartData = Object.values(dailyStats).sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+
+
+
+  const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+  const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+
+  const lastMonthOrders = filteredOrders.filter(order => {
+    const orderDate = new Date(order.rentalStartTime);
+    return (
+      orderDate.getMonth() === lastMonth &&
+      orderDate.getFullYear() === lastMonthYear
+    );
+  });
+
+  const lastMonthRevenue = lastMonthOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const revenueChange = lastMonthRevenue
+    ? (((totalRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1)
+    : 0;
+
 
   const formatCurrency = (amount: number) => `Ksh.${amount.toFixed(2)}`;
   const formatDuration = (minutes: number) => {
@@ -75,7 +129,7 @@ export default function RentalsPage() {
           </Button>
         )}
       </div>
-
+        
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
@@ -132,7 +186,7 @@ export default function RentalsPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={mockChartData.dailyRentals}>
+              <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" tickFormatter={(date) => new Date(date).toLocaleDateString()} />
                 <YAxis />

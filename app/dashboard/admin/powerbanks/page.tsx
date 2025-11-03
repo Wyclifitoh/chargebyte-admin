@@ -24,7 +24,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { mockStations } from '@/lib/mock-data';
+import { mockStations, mockPowerbanks } from '@/lib/mock-data';
 import { useAuth } from '@/components/providers/auth-provider';
 import { 
   Battery,
@@ -38,70 +38,6 @@ import {
   Zap,
   RefreshCw
 } from 'lucide-react';
-
-// Mock powerbank data
-const mockPowerbanks = [
-  {
-    id: 'PB001',
-    stationId: 'ST001',
-    stationName: 'Central Mall Station',
-    slotNumber: 1,
-    batteryLevel: 85,
-    status: 'available',
-    lastCharged: new Date('2024-01-15T08:30:00'),
-    totalCycles: 245,
-    health: 'good',
-    serialNumber: 'CB-2024-001'
-  },
-  {
-    id: 'PB002',
-    stationId: 'ST001',
-    stationName: 'Central Mall Station',
-    slotNumber: 2,
-    batteryLevel: 92,
-    status: 'rented',
-    lastCharged: new Date('2024-01-15T07:15:00'),
-    totalCycles: 189,
-    health: 'good',
-    serialNumber: 'CB-2024-002'
-  },
-  {
-    id: 'PB003',
-    stationId: 'ST001',
-    stationName: 'Central Mall Station',
-    slotNumber: 3,
-    batteryLevel: 15,
-    status: 'charging',
-    lastCharged: new Date('2024-01-15T10:00:00'),
-    totalCycles: 456,
-    health: 'warning',
-    serialNumber: 'CB-2024-003'
-  },
-  {
-    id: 'PB004',
-    stationId: 'ST002',
-    stationName: 'Airport Terminal A',
-    slotNumber: 1,
-    batteryLevel: 0,
-    status: 'maintenance',
-    lastCharged: new Date('2024-01-14T16:45:00'),
-    totalCycles: 678,
-    health: 'poor',
-    serialNumber: 'CB-2024-004'
-  },
-  {
-    id: 'PB005',
-    stationId: 'ST002',
-    stationName: 'Airport Terminal A',
-    slotNumber: 2,
-    batteryLevel: 78,
-    status: 'available',
-    lastCharged: new Date('2024-01-15T09:20:00'),
-    totalCycles: 123,
-    health: 'excellent',
-    serialNumber: 'CB-2024-005'
-  }
-];
 
 export default function PowerbanksPage() {
   const { hasPermission } = useAuth();

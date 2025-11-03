@@ -17,6 +17,12 @@ import {
 
 const menuItems = [
   {
+    title: 'Dashboard',
+    href: '/dashboard/admin',
+    icon: Zap,
+    roles: ['super_admin', 'location_partner'],
+  },
+  {
     title: 'Rentals',
     href: '/dashboard/rentals',
     icon: Battery,
