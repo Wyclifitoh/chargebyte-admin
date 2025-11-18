@@ -163,7 +163,7 @@ export default function AdminDashboardPage() {
               year: 'numeric', 
               month: 'long', 
               day: 'numeric' 
-            })} • Up to 2:00 PM
+            })} 
           </div>
         </div>
         <div className="flex space-x-3">
