@@ -16,7 +16,8 @@ import {
   DollarSign,
   Eye,
   Settings,
-  Plus
+  Plus,
+  Calendar
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -31,53 +32,33 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // --- FILTER ORDERS FOR THIS MONTH ---
-  const now = new Date();
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-  // const monthlyOrders = mockOrders.filter(order => {
-  //   const date = new Date(order.rentalStartTime);
-  //   return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-  // });
+  // --- SET TODAY'S DATE (November 18th, 2025) ---
+  const today = new Date(2025, 10, 18); // Month is 0-indexed, so 10 = November
+  const todayStart = new Date(today);
+  todayStart.setHours(0, 0, 0, 0);
+  
+  const todayEnd = new Date(today);
+  todayEnd.setHours(14, 0, 0, 0); // Max time 2 PM
 
-  const monthlyOrders = mockOrders.filter(order => {
-  const orderDate = new Date(order.rentalStartTime);
+  // --- FILTER ORDERS FOR TODAY ONLY ---
+  const todaysOrders = mockOrders.filter(order => {
+    const orderDate = new Date(order.rentalStartTime);
+    return orderDate >= todayStart && orderDate <= todayEnd;
+  });
 
-  // 1️⃣ Must be same year and month
-  if (orderDate.getMonth() !== currentMonth || orderDate.getFullYear() !== currentYear) {
-    return false;
-  }
-
-  // 2️⃣ If it's today, ensure it's not in the future (no later than current time)
-  if (
-    orderDate.getDate() === now.getDate() &&
-    orderDate.getHours() >= now.getHours() &&
-    orderDate.getMinutes() > now.getMinutes()
-  ) {
-    return false;
-  }
-
-  // 3️⃣ Must not be a future date in this month
-  if (orderDate > now) {
-    return false;
-  }
-
-  return true;
-});
-
-  // --- DASHBOARD METRICS ---
+  // --- DASHBOARD METRICS FOR TODAY ---
   const totalStations = mockStations.length;
   const activeStations = mockStations.filter(s => s.status === 'active').length;
 
   const totalUsers = mockUsers.length;
   const activeUsers = mockUsers.filter(u => u.status === 'active').length;
 
-  // Revenue & rentals based on orders
-  const totalRevenue = monthlyOrders.reduce((sum, order) => sum + order.totalAmount, 0);
-  const totalRentals = monthlyOrders.length;
+  // Revenue & rentals based on today's orders
+  const todaysRevenue = todaysOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+  const todaysRentals = todaysOrders.length;
 
-  const totalCompleted = monthlyOrders.filter(o => o.rentalStatus === 'completed').length;
-  const ongoingRentals = monthlyOrders.filter(o => o.rentalStatus === 'ongoing').length;
+  const todaysCompleted = todaysOrders.filter(o => o.rentalStatus === 'completed').length;
+  const ongoingRentals = todaysOrders.filter(o => o.rentalStatus === 'ongoing').length;
 
   const recentLogs = mockLogs.slice(0, 5);
   const warningLogs = mockLogs.filter(log => log.severity === 'warning').length;
@@ -90,34 +71,65 @@ export default function AdminDashboardPage() {
     { name: 'Network', value: 83, status: 'good' }
   ];
 
-  // --- ACTIVITY DATA FROM ORDERS ---
-  // Count rentals by 4-hour intervals
+  // --- TODAY'S ACTIVITY DATA FROM ORDERS ---
+  // Count rentals by 2-hour intervals for today
   const activityBuckets = [
-    { time: '00:00', users: 0, rentals: 0 },
-    { time: '04:00', users: 0, rentals: 0 },
+    { time: '06:00', users: 0, rentals: 0 },
     { time: '08:00', users: 0, rentals: 0 },
+    { time: '10:00', users: 0, rentals: 0 },
     { time: '12:00', users: 0, rentals: 0 },
-    { time: '16:00', users: 0, rentals: 0 },
-    { time: '20:00', users: 0, rentals: 0 }
+    { time: '14:00', users: 0, rentals: 0 }
   ];
 
-    // Recent activity data for chart
-  const activityData = [
-    { time: '00:00', users: 12, rentals: 8 },
-    { time: '04:00', users: 8, rentals: 5 },
-    { time: '08:00', users: 45, rentals: 32 },
-    { time: '12:00', users: 67, rentals: 48 },
-    { time: '16:00', users: 89, rentals: 62 },
-    { time: '20:00', users: 56, rentals: 41 }
-  ];
-
-  monthlyOrders.forEach(order => {
+  todaysOrders.forEach(order => {
     const hour = new Date(order.rentalStartTime).getHours();
-    const bucketIndex = Math.floor(hour / 4);
+    let bucketIndex = 0;
+    
+    if (hour >= 6 && hour < 8) bucketIndex = 0;
+    else if (hour >= 8 && hour < 10) bucketIndex = 1;
+    else if (hour >= 10 && hour < 12) bucketIndex = 2;
+    else if (hour >= 12 && hour < 14) bucketIndex = 3;
+    else if (hour >= 14) bucketIndex = 4;
+    
     if (activityBuckets[bucketIndex]) {
       activityBuckets[bucketIndex].rentals += 1;
       activityBuckets[bucketIndex].users += 1;
     }
+  });
+
+  // Calculate yesterday's data for comparison
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStart = new Date(yesterday);
+  yesterdayStart.setHours(0, 0, 0, 0);
+  const yesterdayEnd = new Date(yesterday);
+  yesterdayEnd.setHours(14, 0, 0, 0);
+
+  const yesterdayOrders = mockOrders.filter(order => {
+    const orderDate = new Date(order.rentalStartTime);
+    return orderDate >= yesterdayStart && orderDate <= yesterdayEnd;
+  });
+
+  const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+  const revenueChange = yesterdayRevenue
+    ? (((todaysRevenue - yesterdayRevenue) / yesterdayRevenue) * 100).toFixed(1)
+    : '0';
+
+  const yesterdayRentals = yesterdayOrders.length;
+  const rentalsChange = yesterdayRentals
+    ? (((todaysRentals - yesterdayRentals) / yesterdayRentals) * 100).toFixed(1)
+    : '0';
+
+  // Station performance for today
+  const stationPerformance = mockStations.map(station => {
+    const stationOrders = todaysOrders.filter(order => order.machineId === station.id);
+    const stationRevenue = stationOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    
+    return {
+      ...station,
+      todaysRevenue: stationRevenue,
+      todaysRentals: stationOrders.length
+    };
   });
 
   const getHealthColor = (status: string) => {
@@ -138,13 +150,21 @@ export default function AdminDashboardPage() {
     }
   };
 
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-          <p className="text-gray-600 mt-1">System overview and management controls</p>
+          <h1 className="text-3xl font-bold text-gray-900">Today's Admin Dashboard</h1>
+          <p className="text-gray-600 mt-1">Real-time system overview and management</p>
+          <div className="flex items-center mt-2 text-sm text-primary-600 font-medium">
+            <Calendar className="h-4 w-4 mr-2" />
+            {today.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })} • Up to 2:00 PM
+          </div>
         </div>
         <div className="flex space-x-3">
           <Link href="/dashboard/admin/stations">
@@ -162,38 +182,42 @@ export default function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* System Overview Cards */}
+      {/* Today's Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium opacity-90">Total Revenue</CardTitle>
+            <CardTitle className="text-sm font-medium opacity-90">Today's Revenue</CardTitle>
             <DollarSign className="h-4 w-4 opacity-90" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Ksh.{totalRevenue.toLocaleString()}</div>
-            <p className="text-xs opacity-90">+12.5% from last month</p>
+            <div className="text-2xl font-bold">Ksh.{todaysRevenue.toLocaleString()}</div>
+            <p className="text-xs opacity-90">
+              {Number(revenueChange) >= 0 ? '+' : ''}{revenueChange}% from yesterday
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Today's Rentals</CardTitle>
+            <Battery className="h-4 w-4 text-emerald-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{todaysRentals}</div>
+            <p className="text-xs text-gray-600">
+              {ongoingRentals} ongoing • {Number(rentalsChange) >= 0 ? '+' : ''}{rentalsChange}% from yesterday
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Stations</CardTitle>
-            <Building2 className="h-4 w-4 text-emerald-600" />
+            <Building2 className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeStations}/{totalStations}</div>
-            <p className="text-xs text-gray-600">stations operational</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Users</CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeUsers}/{totalUsers}</div>
-            <p className="text-xs text-gray-600">active users</p>
+            <p className="text-xs text-gray-600">stations operational today</p>
           </CardContent>
         </Card>
 
@@ -204,12 +228,12 @@ export default function AdminDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{warningLogs}</div>
-            <p className="text-xs text-gray-600">warnings pending</p>
+            <p className="text-xs text-gray-600">warnings today</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* System Health and Activity */}
+      {/* System Health and Today's Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -241,8 +265,8 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Activity Overview</CardTitle>
-            <CardDescription>User activity and rental patterns today</CardDescription>
+            <CardTitle>Today's Activity</CardTitle>
+            <CardDescription>Rental patterns throughout the day (up to 2:00 PM)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={200}>
@@ -251,13 +275,6 @@ export default function AdminDashboardPage() {
                 <XAxis dataKey="time" />
                 <YAxis />
                 <Tooltip />
-                <Line 
-                  type="monotone" 
-                  dataKey="users" 
-                  stroke="#40E0D0" 
-                  strokeWidth={2}
-                  name="Active Users"
-                />
                 <Line 
                   type="monotone" 
                   dataKey="rentals" 
@@ -306,7 +323,7 @@ export default function AdminDashboardPage() {
             <Link href="/dashboard/admin/logs">
               <Button variant="outline" className="w-full justify-start">
                 <Activity className="mr-2 h-4 w-4" />
-                View System Logs
+                View Today's Logs
               </Button>
             </Link>
           </CardContent>
@@ -315,7 +332,7 @@ export default function AdminDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>Recent System Activity</CardTitle>
-            <CardDescription>Latest system events and alerts</CardDescription>
+            <CardDescription>Latest system events and alerts from today</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -350,7 +367,7 @@ export default function AdminDashboardPage() {
             <div className="mt-4">
               <Link href="/dashboard/admin/logs">
                 <Button variant="outline" className="w-full">
-                  View All Logs
+                  View All Today's Logs
                 </Button>
               </Link>
             </div>
@@ -358,15 +375,15 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* Station Status Overview */}
+      {/* Today's Station Performance */}
       <Card>
         <CardHeader>
-          <CardTitle>Station Status Overview</CardTitle>
-          <CardDescription>Current status of all charging stations</CardDescription>
+          <CardTitle>Today's Station Performance</CardTitle>
+          <CardDescription>Revenue and rental activity across all stations today</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockStations.map((station) => (
+            {stationPerformance.map((station) => (
               <div key={station.id} className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className="font-medium">{station.name}</h4>
@@ -379,9 +396,9 @@ export default function AdminDashboardPage() {
                 </div>
                 <div className="space-y-1 text-sm text-gray-600">
                   <p>Region: {station.region}</p>
+                  <p>Today's Revenue: Ksh.{station.todaysRevenue}</p>
+                  <p>Today's Rentals: {station.todaysRentals}</p>
                   <p>Available: {station.availableSlots}/{station.totalSlots} slots</p>
-                  <p>Revenue: ${station.revenue.toFixed(2)}</p>
-                  <p>Rentals: {station.rentals}</p>
                 </div>
                 <div className="mt-3 flex space-x-2">
                   <Link href={`/dashboard/admin/stations`}>
@@ -390,7 +407,7 @@ export default function AdminDashboardPage() {
                     </Button>
                   </Link>
                   <Button size="sm" variant="outline">
-                    View Details
+                    View Today's Details
                   </Button>
                 </div>
               </div>
