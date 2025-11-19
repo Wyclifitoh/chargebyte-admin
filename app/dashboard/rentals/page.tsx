@@ -40,15 +40,15 @@ export default function RentalsPage() {
     ? mockStations.filter(station => station.partner === 'MallCorp Ltd') 
     : mockStations;
 
-  // Set today's date (November 18th, 2025)
-  const today = new Date(2025, 10, 18); // Month is 0-indexed, so 10 = November
+
+  const today = new Date(2025, 10, 19); 
   const todayStart = new Date(today);
   todayStart.setHours(0, 0, 0, 0);
   
   const todayEnd = new Date(today);
-  todayEnd.setHours(14, 0, 0, 0); // Max time 2 PM as requested
+  todayEnd.setHours(24, 0, 0, 0);
 
-  // Filter orders for today's data only
+
   const baseFilteredOrders = mockOrders.filter(order => {
     const orderDate = new Date(order.rentalStartTime);
     

@@ -32,28 +32,26 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // --- SET TODAY'S DATE (November 18th, 2025) ---
-  const today = new Date(2025, 10, 18); // Month is 0-indexed, so 10 = November
+  const today = new Date(2025, 10, 19); 
   const todayStart = new Date(today);
   todayStart.setHours(0, 0, 0, 0);
   
   const todayEnd = new Date(today);
-  todayEnd.setHours(14, 0, 0, 0); // Max time 2 PM
+  todayEnd.setHours(24, 0, 0, 0); 
 
-  // --- FILTER ORDERS FOR TODAY ONLY ---
+
   const todaysOrders = mockOrders.filter(order => {
     const orderDate = new Date(order.rentalStartTime);
     return orderDate >= todayStart && orderDate <= todayEnd;
   });
 
-  // --- DASHBOARD METRICS FOR TODAY ---
+
   const totalStations = mockStations.length;
   const activeStations = mockStations.filter(s => s.status === 'active').length;
 
   const totalUsers = mockUsers.length;
   const activeUsers = mockUsers.filter(u => u.status === 'active').length;
 
-  // Revenue & rentals based on today's orders
   const todaysRevenue = todaysOrders.reduce((sum, order) => sum + order.totalAmount, 0);
   const todaysRentals = todaysOrders.length;
 
@@ -63,7 +61,6 @@ export default function AdminDashboardPage() {
   const recentLogs = mockLogs.slice(0, 5);
   const warningLogs = mockLogs.filter(log => log.severity === 'warning').length;
 
-  // --- SYSTEM HEALTH MOCK DATA ---
   const systemHealthData = [
     { name: 'CPU Usage', value: 42, status: 'good' },
     { name: 'Memory Usage', value: 65, status: 'warning' },
