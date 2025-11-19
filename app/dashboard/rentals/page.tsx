@@ -149,7 +149,12 @@ export default function RentalsPage() {
     ? (((totalCustomers - yesterdayCustomers) / yesterdayCustomers) * 100).toFixed(1)
     : '0';
 
-  const formatCurrency = (amount: number) => `Ksh.${amount.toFixed(2)}`;
+  // const formatCurrency = (amount: number) => `Ksh.${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number | string) => {
+    // Convert to number if it's a string
+    const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return `Ksh.${numericAmount.toFixed(2)}`;
+  };
   const formatDuration = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
