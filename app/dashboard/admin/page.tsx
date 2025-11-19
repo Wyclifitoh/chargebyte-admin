@@ -206,7 +206,7 @@ export default function AdminDashboardPage() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Today's Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
           <p className="text-gray-600 mt-1">Real-time system overview and management</p>
           <div className="flex items-center mt-2 text-sm text-primary-600 font-medium">
             <Calendar className="h-4 w-4 mr-2" />
