@@ -1,7 +1,6 @@
 import { API_BASE_URL } from './config';
-import { Language } from "@/contexts/LanguageContext";
 
-export async function fetchWithAuth(url: string, language: Language, options: any = {}) {
+export async function fetchWithAuth(url: string, options: any = {}) {
   const token = localStorage.getItem("access_token");
 
   if (!token) throw new Error("No access token found. Please log in.");
@@ -10,8 +9,7 @@ export async function fetchWithAuth(url: string, language: Language, options: an
     ...options,
     headers: {
       ...(options.headers || {}),
-      Authorization: `Bearer ${token}`,
-      "Accept-Language": language,
+      Authorization: `Bearer ${token}`, 
       "Content-Type": "application/json",
     },
   };
