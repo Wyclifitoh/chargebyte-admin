@@ -26,7 +26,7 @@ import {
 } from 'recharts';
 import { 
   TrendingUp,
-  DollarSign,
+  Banknote,
   Users,
   Battery,
   Calendar,
@@ -89,13 +89,25 @@ export default function AnalyticsPage() {
     );
   }
 
+  // Map timeRange to API date parameter
+  const getDateParam = () => {
+    switch (timeRange) {
+      case '7d': return 'last7days';
+      case '30d': return 'last30days';
+      case '3m': return 'last3months';
+      default: return 'last30days';
+    }
+  };
+
   // Fetch analytics data
   const fetchAnalyticsData = async () => {
     try {
       setRefreshing(true);
+      const dateParam = getDateParam();
+      
       const [dashboardResponse, statsResponse, analyticsResponse, demographicsResponse] = await Promise.all([
         getDashboardData(),
-        getOrderStats({ date: timeRange === '30d' ? 'last30days' : 'last7days' }),
+        getOrderStats({ date: dateParam }),
         getAllCustomerAnalytics(),
         getCustomerDemographics()
       ]);
@@ -162,14 +174,21 @@ export default function AnalyticsPage() {
 
   const formatCurrency = (value: number) => `Ksh.${value.toLocaleString()}`;
   const formatNumber = (num: number) => num.toLocaleString();
-  // const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 
   const formatPercentage = (value: number | null | undefined) => {
-    // Handle null, undefined, or non-numeric values
     if (value === null || value === undefined || isNaN(Number(value))) {
       return '0.0%';
     }
     return `${Number(value).toFixed(1)}%`;
+  };
+
+  const getTimeRangeLabel = () => {
+    switch (timeRange) {
+      case '7d': return 'Last 7 days';
+      case '30d': return 'Last 30 days';
+      case '3m': return 'Last 3 months';
+      default: return 'Last 30 days';
+    }
   };
 
   const handleRefresh = () => {
@@ -196,12 +215,13 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex space-x-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32">
+            <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="3m">Last 3 months</SelectItem>
             </SelectContent>
           </Select>
           <Button 
@@ -224,12 +244,12 @@ export default function AnalyticsPage() {
         <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium opacity-90">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 opacity-90" />
+            <Banknote className="h-4 w-4 opacity-90" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
             <p className="text-xs opacity-90">
-              {timeRange === '30d' ? 'Last 30 days' : 'Last 7 days'}
+              {getTimeRangeLabel()}
             </p>
           </CardContent>
         </Card>
@@ -292,7 +312,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Revenue Trend</CardTitle>
-            <CardDescription>Revenue performance over time</CardDescription>
+            <CardDescription>Revenue performance over {getTimeRangeLabel().toLowerCase()}</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>

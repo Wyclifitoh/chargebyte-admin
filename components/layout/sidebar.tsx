@@ -29,8 +29,8 @@ const menuItems = [
     roles: ['super_admin', 'staff', 'location_partner'],
   },
   {
-    title: 'Advertisements',
-    href: '/dashboard/advertisements',
+    title: 'Events',
+    href: '/dashboard/events',
     icon: Megaphone,
     roles: ['super_admin', 'staff', 'ad_client'],
   },

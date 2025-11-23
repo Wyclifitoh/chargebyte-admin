@@ -20,7 +20,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { 
   Battery,
   MapPin,
-  DollarSign,
+  Banknote,
   Users,
   TrendingUp,
   Search,
@@ -82,7 +82,7 @@ export default function RentalsPage() {
         status: statusFilter === 'all' ? undefined : statusFilter,
         machineId: selectedStation === 'all' ? undefined : selectedStation,
         search: searchTerm || undefined,
-        limit: 1000 // Get all today's orders
+        limit: 1000 
       };
 
       const [ordersResponse, statsResponse, optionsResponse] = await Promise.all([
@@ -139,17 +139,16 @@ export default function RentalsPage() {
     ? (((totalRevenue - yesterdayRevenue) / yesterdayRevenue) * 100).toFixed(1)
     : '0';
 
-  const yesterdayRentals = Math.floor(totalRentals * 0.9); // Mock comparison
+  const yesterdayRentals = Math.floor(totalRentals * 0.9); 
   const rentalsChange = yesterdayRentals
     ? (((totalRentals - yesterdayRentals) / yesterdayRentals) * 100).toFixed(1)
     : '0';
 
-  const yesterdayCustomers = Math.floor(totalCustomers * 0.88); // Mock comparison
+  const yesterdayCustomers = Math.floor(totalCustomers * 0.88);  
   const customersChange = yesterdayCustomers
     ? (((totalCustomers - yesterdayCustomers) / yesterdayCustomers) * 100).toFixed(1)
     : '0';
-
-  // const formatCurrency = (amount: number) => `Ksh.${amount.toFixed(2)}`;
+ 
   const formatCurrency = (amount: number | string) => {
     // Convert to number if it's a string
     const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -209,7 +208,7 @@ export default function RentalsPage() {
         <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium opacity-90">Today's Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 opacity-90" />
+            <Banknote className="h-4 w-4 opacity-90" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalRevenue)}</div>
