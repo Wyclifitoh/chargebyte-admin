@@ -103,11 +103,10 @@ export default function AdminDashboardPage() {
   const totalStations = mockStations.length;
   const activeStations = mockStations.filter(s => s.status === 'active').length;
 
-  // Using mock data for users and logs (you can replace these with API calls later)
-  const totalUsers = 1250; // Mock data
-  const activeUsers = 1180; // Mock data
-  const recentLogs = []; // Mock data - you can fetch from API
-  const warningLogs = 3; // Mock data
+  const totalUsers = 1250; 
+  const activeUsers = 1180; 
+  const recentLogs = []; 
+  const warningLogs = 3; 
 
   const todaysRevenue = stats?.totalRevenue || 0;
   const todaysRentals = stats?.totalOrders || 0;

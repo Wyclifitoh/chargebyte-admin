@@ -257,7 +257,7 @@ export default function RentalsPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
         <Card>
           <CardHeader>
             <CardTitle>Today's Rental Activity</CardTitle>
@@ -278,7 +278,7 @@ export default function RentalsPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        {/* <Card>
           <CardHeader>
             <CardTitle>Revenue by Station (Today)</CardTitle>
             <CardDescription>Today's performance across stations</CardDescription>
@@ -294,7 +294,7 @@ export default function RentalsPage() {
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Orders Table */}
