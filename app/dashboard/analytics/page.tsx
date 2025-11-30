@@ -497,10 +497,19 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="month" />
                 <YAxis tickFormatter={(value) => `Ksh.${value / 1000}K`} />
                 <Tooltip
-                  formatter={(value) => [
-                    `Ksh.${Number(value).toLocaleString()}`,
-                    "Revenue",
-                  ]}
+                  formatter={(value, name, props) => {
+                    // Use the dataKey from props to determine the series
+                    const dataKey = props.dataKey;
+                    if (dataKey === "revenue") {
+                      return [
+                        `Ksh.${Number(value).toLocaleString()}`,
+                        "Revenue",
+                      ];
+                    } else if (dataKey === "rentals") {
+                      return [`${Number(value).toLocaleString()}`, "Rentals"];
+                    }
+                    return [value, name];
+                  }}
                 />
                 <Legend />
                 <Area
