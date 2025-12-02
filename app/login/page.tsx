@@ -1,19 +1,31 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/components/providers/auth-provider';
-import { Zap } from 'lucide-react';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useAuth } from "@/components/providers/auth-provider";
+import { Zap } from "lucide-react";
 import { toast } from "react-toastify";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState("super_admin");
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -22,49 +34,81 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     // Mock login - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock validation
-    if (email !== "ochieng@chargebyte.io") {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    // Mock validation - Add more users here
+    const validUsers = [
+      {
+        email: "ochieng@chargebyte.io",
+        password: "admin@ChargeByte",
+        userData: {
+          id: "1",
+          email: "ochieng@chargebyte.io",
+          name: "Quinter Ochieng",
+          role: "super_admin" as const,
+        },
+      },
+      {
+        email: "info@chargebyte.io", // New user
+        password: "@!CBAfrica2023", // New password
+        userData: {
+          id: "2",
+          email: "info@chargebyte.io",
+          name: "Test User",
+          role: "super_admin" as const, // Adjust role as needed
+        },
+      },
+      // Add more mock users as needed
+      {
+        email: "partner@example.com",
+        password: "partner123",
+        userData: {
+          id: "3",
+          email: "partner@example.com",
+          name: "Location Partner",
+          role: "location_partner" as const,
+        },
+      },
+    ];
+
+    // Find matching user
+    const matchedUser = validUsers.find((user) => user.email === email);
+
+    if (!matchedUser) {
       toast.error("Invalid email address!");
       setLoading(false);
       return;
     }
 
-    if (password !== "admin@ChargeByte") {
+    if (matchedUser.password !== password) {
       toast.error("Incorrect password!");
       setLoading(false);
       return;
     }
 
-    // Mocked user data
-    const userData = {
-      id: "1",
-      email,
-      name: "Quinter Ochieng",
-      role: role as any,
-    }; 
-    
-    login(userData);
-    
+    // Check if role matches (if role selection is required)
+    if (role && matchedUser.userData.role !== role) {
+      toast.error("Selected role doesn't match user's role!");
+      setLoading(false);
+      return;
+    }
+
+    login(matchedUser.userData);
+
     // Redirect based on role
-    switch (role) {
-      case 'super_admin':
-      case 'staff':
-        router.push('/dashboard/admin');
+    switch (matchedUser.userData.role) {
+      case "super_admin":
+        router.push("/dashboard/admin");
         break;
-      case 'location_partner':
-        router.push('/dashboard/rentals');
-        break;
-      case 'ad_client':
-        router.push('/dashboard/advertisements');
+      case "location_partner":
+        router.push("/dashboard/rentals");
         break;
       default:
-        router.push('/dashboard/rentals');
+        router.push("/dashboard/rentals");
     }
-    
+
     setLoading(false);
   };
 
@@ -83,7 +127,9 @@ export default function LoginPage() {
             />
           </div>
           <div>
-            <CardTitle className="text-2xl font-bold text-gray-900">Welcome to Chargebyte</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Welcome to Chargebyte
+            </CardTitle>
             <CardDescription className="text-gray-600">
               Smart Powerbank Rental System
             </CardDescription>
@@ -103,7 +149,7 @@ export default function LoginPage() {
                 placeholder="Enter your email"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -116,7 +162,7 @@ export default function LoginPage() {
                 placeholder="Enter your password"
               />
             </div>
-            
+
             <div className="space-y-2 hidden">
               <Label htmlFor="role">Role</Label>
               <Select value={role} onValueChange={setRole} required>
@@ -126,18 +172,22 @@ export default function LoginPage() {
                 <SelectContent>
                   <SelectItem value="super_admin">Super Admin</SelectItem>
                   <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="location_partner">Location Partner</SelectItem>
-                  <SelectItem value="ad_client">Advertisement Client</SelectItem>
+                  <SelectItem value="location_partner">
+                    Location Partner
+                  </SelectItem>
+                  <SelectItem value="ad_client">
+                    Advertisement Client
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               className="w-full h-11 bg-primary-500 hover:bg-primary-600 text-white font-medium"
               disabled={loading}
             >
-              {loading ? 'Signing in...' : 'Sign In'}
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
         </CardContent>
