@@ -51,16 +51,15 @@ export default function LoginPage() {
         },
       },
       {
-        email: "info@chargebyte.io", // New user
-        password: "@!CBAfrica2023", // New password
+        email: "info@chargebyte.io",
+        password: "@!CBAfrica2023",
         userData: {
           id: "2",
           email: "info@chargebyte.io",
-          name: "Test User",
-          role: "super_admin" as const, // Adjust role as needed
+          name: "ChargeByte Africa",
+          role: "super_admin" as const,
         },
       },
-      // Add more mock users as needed
       {
         email: "partner@example.com",
         password: "partner123",
