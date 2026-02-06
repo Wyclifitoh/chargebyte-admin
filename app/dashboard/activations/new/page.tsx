@@ -60,10 +60,10 @@ export default function AddActivationPage() {
     location_type: "Market" as "School" | "Market" | "Institution",
     location_name: "",
     status: "Visited" as "Scheduled" | "Visited" | "Cancelled",
-    activity_awareness: false,
-    activity_training: false,
-    activity_demo: false,
-    giga_explained: false,
+    activity_awareness: 0,
+    activity_training: 0,
+    activity_demo: 0,
+    giga_explained: 0,
     internet_method: "" as "WiFi" | "Powerbank" | "Both" | "",
     notes: "",
     visit_date: new Date().toISOString().split("T")[0],
@@ -293,9 +293,9 @@ export default function AddActivationPage() {
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="activity_awareness"
-                      checked={formData.activity_awareness}
+                      checked={formData.activity_awareness === 1}
                       onCheckedChange={(checked) =>
-                        handleInputChange("activity_awareness", checked)
+                        handleInputChange("activity_awareness", checked ? 1 : 0)
                       }
                     />
                     <Label
@@ -309,9 +309,9 @@ export default function AddActivationPage() {
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="activity_training"
-                      checked={formData.activity_training}
+                      checked={formData.activity_training === 1}
                       onCheckedChange={(checked) =>
-                        handleInputChange("activity_training", checked)
+                        handleInputChange("activity_training", checked ? 1 : 0)
                       }
                     />
                     <Label
@@ -325,9 +325,9 @@ export default function AddActivationPage() {
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="activity_demo"
-                      checked={formData.activity_demo}
+                      checked={formData.activity_demo === 1}
                       onCheckedChange={(checked) =>
-                        handleInputChange("activity_demo", checked)
+                        handleInputChange("activity_demo", checked ? 1 : 0)
                       }
                     />
                     <Label htmlFor="activity_demo" className="cursor-pointer">
@@ -335,12 +335,12 @@ export default function AddActivationPage() {
                     </Label>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="hidden flex items-center space-x-2">
                     <Switch
                       id="giga_explained"
-                      checked={formData.giga_explained}
+                      checked={formData.giga_explained === 1}
                       onCheckedChange={(checked) =>
-                        handleInputChange("giga_explained", checked)
+                        handleInputChange("giga_explained", checked ? 1 : 0)
                       }
                     />
                     <Label htmlFor="giga_explained" className="cursor-pointer">
