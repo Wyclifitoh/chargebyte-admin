@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
   const { hasPermission } = useAuth();
   const [timeRange, setTimeRange] = useState("30d");
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(
-    null
+    null,
   );
   const [orderStats, setOrderStats] = useState<OrderStats | null>(null);
   const [customerAnalytics, setCustomerAnalytics] = useState<any>(null);
@@ -554,10 +554,10 @@ export default function AnalyticsPage() {
                         index === 0
                           ? "bg-yellow-100 text-yellow-600"
                           : index === 1
-                          ? "bg-gray-100 text-gray-600"
-                          : index === 2
-                          ? "bg-orange-100 text-orange-600"
-                          : "bg-blue-100 text-blue-600"
+                            ? "bg-gray-100 text-gray-600"
+                            : index === 2
+                              ? "bg-orange-100 text-orange-600"
+                              : "bg-blue-100 text-blue-600"
                       }`}
                     >
                       {index < 3 ? (
@@ -709,8 +709,8 @@ export default function AnalyticsPage() {
                           station.current_utilization > 70
                             ? "default"
                             : station.current_utilization > 40
-                            ? "secondary"
-                            : "outline"
+                              ? "secondary"
+                              : "outline"
                         }
                       >
                         {formatPercentage(station.current_utilization)}
@@ -793,18 +793,20 @@ export default function AnalyticsPage() {
                             {periodData.period}
                           </td>
                           <td className="p-2">
-                            {periodData.total_customers.toLocaleString()}
+                            {(periodData.total_customers ?? 0).toLocaleString()}
                           </td>
                           <td className="p-2">
-                            {periodData.female_customers.toLocaleString()} (
-                            {formatPercentage(periodData.female_percentage)})
+                            {(
+                              periodData.female_customers ?? 0
+                            ).toLocaleString()}{" "}
+                            ({formatPercentage(periodData.female_percentage)})
                           </td>
                           <td className="p-2">
-                            {periodData.male_customers.toLocaleString()} (
-                            {formatPercentage(periodData.male_percentage)})
+                            {(periodData.male_customers ?? 0).toLocaleString()}{" "}
+                            ({formatPercentage(periodData.male_percentage)})
                           </td>
                           <td className="p-2">
-                            {periodData.other_gender.toLocaleString()} (
+                            {(periodData.other_gender ?? 0).toLocaleString()} (
                             {formatPercentage(periodData.other_percentage)})
                           </td>
                         </tr>
