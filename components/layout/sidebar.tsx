@@ -18,6 +18,7 @@ import {
   PlusCircle,
   List,
   FileText,
+  ChevronDown,
 } from "lucide-react";
 
 const menuItems = [
@@ -54,22 +55,22 @@ const menuItems = [
     items: [
       {
         title: "Dashboard",
-        href: "/activations",
+        href: "/dashboard/activations",
         icon: PieChart,
       },
       {
         title: "Add Activation",
-        href: "/activations/new",
+        href: "/dashboard/activations/new",
         icon: PlusCircle,
       },
       {
         title: "Activation Records",
-        href: "/activations/list",
+        href: "/dashboard/activations/list",
         icon: List,
       },
       {
         title: "Reports",
-        href: "/activations/reports",
+        href: "/dashboard/activations/reports",
         icon: FileText,
       },
     ],
@@ -105,9 +106,6 @@ const menuItems = [
     roles: ["super_admin", "staff", "location_partner", "ad_client"],
   },
 ];
-
-// Optional: If you want a collapsible sub-menu component
-("use client");
 
 import { useState } from "react";
 

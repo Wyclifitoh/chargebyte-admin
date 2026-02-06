@@ -30,8 +30,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Calendar,
+  Users,
+  UserPlus,
 } from "lucide-react";
 import { getAllActivations } from "@/lib/api/activations";
+import AddContactModal from "@/components/AddContactModal";
+import ViewContactsModal from "@/components/ViewContactsModal";
 
 const COUNTIES = [
   "All Counties",
@@ -62,19 +66,24 @@ const AGENTS = [
 
 interface Activation {
   id: string;
-  locationName: string;
+  location_name: string;
   county: string;
   address: string;
-  agentName: string;
-  status: "scheduled" | "visited" | "completed" | "cancelled";
-  activationDate: string;
-  peopleReached: number;
-  contactPerson: string;
-  contactPhone: string;
+  agent_name: string;
+  status: string;
+  activation_date: string;
+  people_reached: number;
+  contact_person: string;
+  contact_phone: string;
 }
 
 export default function ActivationsListPage() {
-  const [activations, setActivations] = useState<Activation[]>([]);
+  const [activations, setActivations] = useState<any[]>([]);
+  const [selectedActivation, setSelectedActivation] = useState<any>(null);
+  const [showAddContactModal, setShowAddContactModal] = useState(false);
+  const [showViewContactsModal, setShowViewContactsModal] = useState(false);
+
+  // const [activations, setActivations] = useState<Activation[]>([]);
   const [filteredActivations, setFilteredActivations] = useState<Activation[]>(
     [],
   );
@@ -201,6 +210,24 @@ export default function ActivationsListPage() {
       startDate: "",
       endDate: "",
     });
+  };
+
+  const handleAddContact = (activationId: string) => {
+    const activation = activations.find((a) => a.id === activationId);
+    setSelectedActivation(activation);
+    setShowAddContactModal(true);
+  };
+
+  const handleContactAdded = () => {
+    // Refresh the data
+    fetchActivations();
+    setShowAddContactModal(false);
+  };
+
+  const handleViewContacts = (activationId: string) => {
+    const activation = activations.find((a) => a.id === activationId);
+    setSelectedActivation(activation);
+    setShowViewContactsModal(true);
   };
 
   // Pagination logic
@@ -426,30 +453,58 @@ export default function ActivationsListPage() {
                 {currentActivations.map((activation) => (
                   <TableRow key={activation.id}>
                     <TableCell className="font-medium">
-                      {activation.locationName}
+                      {activation.location_name}
                     </TableCell>
                     <TableCell>{activation.county}</TableCell>
                     <TableCell className="max-w-xs truncate">
                       {activation.address}
                     </TableCell>
-                    <TableCell>{activation.agentName}</TableCell>
+                    <TableCell>{activation.agent_name}</TableCell>
                     <TableCell>{getStatusBadge(activation.status)}</TableCell>
                     <TableCell>
-                      {new Date(activation.activationDate).toLocaleDateString()}
+                      {new Date(
+                        activation.activation_date,
+                      ).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      {activation.peopleReached.toLocaleString()}
+                      {activation.people_reached.toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        <div>{activation.contactPerson}</div>
+                        <div>{activation.contact_person}</div>
                         <div className="text-gray-500">
-                          {activation.contactPhone}
+                          {activation.contact_phone}
                         </div>
                       </div>
                     </TableCell>
+                    {/* <TableCell>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="ghost">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="ghost">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell> */}
                     <TableCell>
                       <div className="flex space-x-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleViewContacts(activation.id)}
+                          title="View Contacts"
+                        >
+                          <Users className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleAddContact(activation.id)}
+                          title="Add Contact"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
                         <Button size="sm" variant="ghost">
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -465,6 +520,30 @@ export default function ActivationsListPage() {
           </div>
         </CardContent>
       </Card>
+
+      {selectedActivation && (
+        <AddContactModal
+          open={showAddContactModal}
+          onClose={() => {
+            setShowAddContactModal(false);
+            setSelectedActivation(null);
+          }}
+          onSuccess={handleContactAdded}
+          activation={selectedActivation}
+        />
+      )}
+
+      {/* View Contacts Modal */}
+      {selectedActivation && (
+        <ViewContactsModal
+          open={showViewContactsModal}
+          onClose={() => {
+            setShowViewContactsModal(false);
+            setSelectedActivation(null);
+          }}
+          activation={selectedActivation}
+        />
+      )}
     </div>
   );
 }

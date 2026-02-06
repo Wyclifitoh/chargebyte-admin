@@ -39,6 +39,7 @@ import {
 import {
   getActivationStats,
   getRecentActivations,
+  getActivationStatsByCounty,
 } from "@/lib/api/activations";
 
 interface ActivationStats {
@@ -48,7 +49,9 @@ interface ActivationStats {
   peopleReached: number;
 }
 
+// Update VisitData to include index signature for Recharts compatibility
 interface VisitData {
+  [key: string]: any; // This allows Recharts to access properties dynamically
   county: string;
   visited: number;
   scheduled: number;
@@ -56,12 +59,14 @@ interface VisitData {
 
 interface RecentActivation {
   id: string;
-  locationName: string;
+  location_name: string;
+  location_type: string;
+  notes: string;
   county: string;
-  agentName: string;
-  status: "scheduled" | "visited" | "completed";
+  agent_name: string;
+  status: string;
   date: string;
-  peopleReached: number;
+  people_reached: number;
 }
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
@@ -81,15 +86,42 @@ export default function ActivationDashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsResponse, recentResponse] = await Promise.all([
-        getActivationStats(),
-        getRecentActivations(),
-      ]);
+      const [statsResponse, recentResponse, countyStatsResponse] =
+        await Promise.all([
+          getActivationStats(),
+          getRecentActivations(),
+          getActivationStatsByCounty(),
+        ]);
 
       setStats(statsResponse.data);
       setRecentActivations(recentResponse.data);
 
-      // Mock data for charts - replace with actual API data
+      console.log("Recent Activations:", recentResponse.data);
+
+      // Process county stats for charts
+      if (countyStatsResponse.data && Array.isArray(countyStatsResponse.data)) {
+        const processedData: VisitData[] = countyStatsResponse.data.map(
+          (county: any) => ({
+            county: county.county,
+            visited: county.visited_count || 0,
+            scheduled: county.scheduled_count || 0,
+            total: county.total_activations || 0,
+          }),
+        );
+        setVisitData(processedData);
+      } else {
+        // Fallback mock data if API doesn't return expected format
+        setVisitData([
+          { county: "Nairobi", visited: 45, scheduled: 60 },
+          { county: "Mombasa", visited: 38, scheduled: 50 },
+          { county: "Kisumu", visited: 25, scheduled: 40 },
+          { county: "Nakuru", visited: 32, scheduled: 45 },
+          { county: "Eldoret", visited: 28, scheduled: 35 },
+        ]);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      // Fallback to mock data on error
       setVisitData([
         { county: "Nairobi", visited: 45, scheduled: 60 },
         { county: "Mombasa", visited: 38, scheduled: 50 },
@@ -97,8 +129,6 @@ export default function ActivationDashboard() {
         { county: "Nakuru", visited: 32, scheduled: 45 },
         { county: "Eldoret", visited: 28, scheduled: 35 },
       ]);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
     }
@@ -317,16 +347,16 @@ export default function ActivationDashboard() {
                 {recentActivations.map((activation) => (
                   <TableRow key={activation.id}>
                     <TableCell className="font-medium">
-                      {activation.locationName}
+                      {activation.location_name}
                     </TableCell>
                     <TableCell>{activation.county}</TableCell>
-                    <TableCell>{activation.agentName}</TableCell>
+                    <TableCell>{activation.agent_name}</TableCell>
                     <TableCell>{getStatusBadge(activation.status)}</TableCell>
                     <TableCell>
                       {new Date(activation.date).toLocaleDateString()}
                     </TableCell>
                     <TableCell>
-                      {activation.peopleReached.toLocaleString()}
+                      {activation.people_reached.toLocaleString()}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">

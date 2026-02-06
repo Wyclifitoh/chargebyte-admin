@@ -36,7 +36,13 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { generateActivationReport, getReportData } from "@/lib/api/activations";
+import {
+  generateActivationReport,
+  getActivationReportData,
+  getActivationStatsByCounty,
+  getActivationMonthlyTrends,
+  getActivationStatsByLocationType,
+} from "@/lib/api/activations";
 
 const COUNTIES = [
   "All Counties",
@@ -46,36 +52,62 @@ const COUNTIES = [
   "Nakuru",
   "Eldoret",
   "Kisii",
+  "Murang'a",
+  "Nyeri",
+  "Kericho",
+  "Narok",
+  "Meru",
+  "Isiolo",
 ];
 
-const STATUS_OPTIONS = [
-  "All Status",
-  "scheduled",
-  "visited",
-  "completed",
-  "cancelled",
-];
+const STATUS_OPTIONS = ["All Status", "Visited", "Scheduled", "Cancelled"];
+
+const LOCATION_TYPES = ["School", "Market", "Institution"];
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
-interface ReportData {
-  countyData: Array<{
-    county: string;
-    activations: number;
-    peopleReached: number;
-  }>;
-  statusData: Array<{ status: string; count: number }>;
-  monthlyData: Array<{ month: string; scheduled: number; visited: number }>;
-  summary: {
-    totalActivations: number;
-    totalPeopleReached: number;
-    completionRate: number;
-    averagePeoplePerActivation: number;
-  };
-}
+// Helper function to process county data
+const processCountyData = (countyStats: any[]) => {
+  return countyStats.map((stat) => ({
+    county: stat.county,
+    activations: stat.total_activations,
+    peopleReached: stat.people_reached || 0,
+    visited: stat.visited_count || 0,
+    scheduled: stat.scheduled_count || 0,
+  }));
+};
+
+// Helper function to process status data
+const processStatusData = (reportData: any) => {
+  if (!reportData?.report_data) return [];
+
+  const statusCount: Record<string, number> = {};
+  reportData.report_data.forEach((item: any) => {
+    const status = item.status;
+    statusCount[status] = (statusCount[status] || 0) + 1;
+  });
+
+  return Object.entries(statusCount).map(([status, count]) => ({
+    status,
+    count,
+  }));
+};
+
+// Helper function to process monthly data
+const processMonthlyData = (monthlyTrends: any[]) => {
+  return monthlyTrends.map((trend) => ({
+    month: trend.month,
+    scheduled: trend.scheduled_count || 0,
+    visited: trend.visited_count || 0,
+  }));
+};
 
 export default function ReportsPage() {
-  const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [reportData, setReportData] = useState<any>(null);
+  const [countyData, setCountyData] = useState<any[]>([]);
+  const [statusData, setStatusData] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [filters, setFilters] = useState({
@@ -83,7 +115,6 @@ export default function ReportsPage() {
     endDate: "",
     county: "All Counties",
     status: "All Status",
-    reportType: "summary",
   });
 
   useEffect(() => {
@@ -93,13 +124,54 @@ export default function ReportsPage() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const response = await getReportData({
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-        county: filters.county !== "All Counties" ? filters.county : undefined,
-        status: filters.status !== "All Status" ? filters.status : undefined,
-      });
-      setReportData(response.data);
+
+      // Fetch all data in parallel
+      const [reportResponse, countyResponse, monthlyResponse] =
+        await Promise.all([
+          getActivationReportData({
+            startDate: filters.startDate || undefined,
+            endDate: filters.endDate || undefined,
+            county:
+              filters.county !== "All Counties" ? filters.county : undefined,
+            status:
+              filters.status !== "All Status" ? filters.status : undefined,
+          }),
+          getActivationStatsByCounty(),
+          getActivationMonthlyTrends(),
+        ]);
+
+      // Process the data
+      const reportData = reportResponse.data;
+      const countyStats = countyResponse.data;
+      const monthlyTrends = monthlyResponse.data;
+
+      setReportData(reportData);
+      setCountyData(processCountyData(countyStats));
+      setStatusData(processStatusData(reportData));
+      setMonthlyData(processMonthlyData(monthlyTrends));
+
+      // Calculate summary from report data
+      if (reportData?.summary) {
+        const summaryData = reportData.summary;
+        setSummary({
+          totalActivations: summaryData.total_activations,
+          totalPeopleReached: summaryData.total_people_reached,
+          completionRate:
+            summaryData.visited_count > 0
+              ? Math.round(
+                  (summaryData.visited_count / summaryData.total_activations) *
+                    100,
+                )
+              : 0,
+          averagePeoplePerActivation:
+            summaryData.total_people_reached > 0
+              ? Math.round(
+                  summaryData.total_people_reached /
+                    summaryData.total_activations,
+                )
+              : 0,
+        });
+      }
     } catch (error) {
       console.error("Error fetching report data:", error);
     } finally {
@@ -114,21 +186,10 @@ export default function ReportsPage() {
   const handleGenerateReport = async () => {
     try {
       setGenerating(true);
-      const response = await generateActivationReport(filters);
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute(
-        "download",
-        `activation-report-${new Date().toISOString().split("T")[0]}.xlsx`,
-      );
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      await generateActivationReport(filters);
     } catch (error) {
       console.error("Error generating report:", error);
+      alert("Failed to generate report. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -136,6 +197,10 @@ export default function ReportsPage() {
 
   const handlePrintReport = () => {
     window.print();
+  };
+
+  const handleApplyFilters = () => {
+    fetchReportData();
   };
 
   if (loading) {
@@ -247,7 +312,7 @@ export default function ReportsPage() {
                 <SelectContent>
                   {STATUS_OPTIONS.map((status) => (
                     <SelectItem key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                      {status}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -256,7 +321,7 @@ export default function ReportsPage() {
           </div>
 
           <div className="flex justify-end mt-4">
-            <Button onClick={fetchReportData}>Apply Filters</Button>
+            <Button onClick={handleApplyFilters}>Apply Filters</Button>
           </div>
         </CardContent>
       </Card>
@@ -285,32 +350,32 @@ export default function ReportsPage() {
               <CardTitle>Report Summary</CardTitle>
             </CardHeader>
             <CardContent>
-              {reportData && (
+              {summary && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div className="text-center p-6 border rounded-lg">
                     <div className="text-3xl font-bold text-blue-600 mb-2">
-                      {reportData.summary.totalActivations}
+                      {summary.totalActivations}
                     </div>
                     <div className="text-sm font-medium">Total Activations</div>
                   </div>
 
                   <div className="text-center p-6 border rounded-lg">
                     <div className="text-3xl font-bold text-green-600 mb-2">
-                      {reportData.summary.totalPeopleReached.toLocaleString()}
+                      {summary.totalPeopleReached.toLocaleString()}
                     </div>
                     <div className="text-sm font-medium">People Reached</div>
                   </div>
 
                   <div className="text-center p-6 border rounded-lg">
                     <div className="text-3xl font-bold text-purple-600 mb-2">
-                      {reportData.summary.completionRate}%
+                      {summary.completionRate}%
                     </div>
                     <div className="text-sm font-medium">Completion Rate</div>
                   </div>
 
                   <div className="text-center p-6 border rounded-lg">
                     <div className="text-3xl font-bold text-orange-600 mb-2">
-                      {reportData.summary.averagePeoplePerActivation}
+                      {summary.averagePeoplePerActivation}
                     </div>
                     <div className="text-sm font-medium">
                       Avg. People per Activation
@@ -320,7 +385,7 @@ export default function ReportsPage() {
               )}
 
               {/* Data Table */}
-              {reportData && (
+              {countyData.length > 0 && (
                 <div className="mt-6">
                   <h3 className="text-lg font-semibold mb-4">
                     County-wise Breakdown
@@ -332,11 +397,12 @@ export default function ReportsPage() {
                           <th className="text-left p-3">County</th>
                           <th className="text-left p-3">Activations</th>
                           <th className="text-left p-3">People Reached</th>
-                          <th className="text-left p-3">Avg. per Activation</th>
+                          <th className="text-left p-3">Visited</th>
+                          <th className="text-left p-3">Scheduled</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {reportData.countyData.map((county) => (
+                        {countyData.map((county) => (
                           <tr
                             key={county.county}
                             className="border-b hover:bg-gray-50"
@@ -346,11 +412,8 @@ export default function ReportsPage() {
                             <td className="p-3">
                               {county.peopleReached.toLocaleString()}
                             </td>
-                            <td className="p-3">
-                              {Math.round(
-                                county.peopleReached / county.activations,
-                              )}
-                            </td>
+                            <td className="p-3">{county.visited}</td>
+                            <td className="p-3">{county.scheduled}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -372,7 +435,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={reportData?.countyData.slice(0, 8)}>
+                  <BarChart data={countyData.slice(0, 8)}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="county" />
                     <YAxis />
@@ -402,7 +465,7 @@ export default function ReportsPage() {
                 <ResponsiveContainer width="100%" height={300}>
                   <RechartsPieChart>
                     <Pie
-                      data={reportData?.statusData}
+                      data={statusData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -411,7 +474,7 @@ export default function ReportsPage() {
                       fill="#8884d8"
                       dataKey="count"
                     >
-                      {reportData?.statusData.map((entry, index) => (
+                      {statusData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={COLORS[index % COLORS.length]}
@@ -432,7 +495,7 @@ export default function ReportsPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={reportData?.monthlyData}>
+                  <BarChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
                     <YAxis />
@@ -454,92 +517,75 @@ export default function ReportsPage() {
               <CardTitle>Detailed Report</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {/* Export Options */}
-                <div className="bg-gray-50 p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4">Export Options</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button
-                      variant="outline"
-                      className="flex flex-col items-center justify-center h-24"
-                    >
-                      <FileText className="h-8 w-8 mb-2" />
-                      <span>CSV Export</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex flex-col items-center justify-center h-24"
-                    >
-                      <Download className="h-8 w-8 mb-2" />
-                      <span>Excel Export</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex flex-col items-center justify-center h-24"
-                    >
-                      <Printer className="h-8 w-8 mb-2" />
-                      <span>PDF Report</span>
+              {reportData?.report_data && reportData.report_data.length > 0 ? (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">
+                      Activation Records ({reportData.report_data.length} total)
+                    </h3>
+                    <Button variant="outline" onClick={handleGenerateReport}>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export All Data
                     </Button>
                   </div>
-                </div>
 
-                {/* Report Customization */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">
-                    Customize Report
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>Include Columns</Label>
-                      <div className="space-y-2">
-                        {[
-                          "Location Name",
-                          "County",
-                          "Agent",
-                          "Status",
-                          "Date",
-                          "People Reached",
-                          "Contact Info",
-                        ].map((col) => (
-                          <div
-                            key={col}
-                            className="flex items-center space-x-2"
-                          >
-                            <input
-                              type="checkbox"
-                              id={col}
-                              defaultChecked
-                              className="rounded"
-                            />
-                            <Label htmlFor={col} className="text-sm">
-                              {col}
-                            </Label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Report Format</Label>
-                      <Select defaultValue="detailed">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select format" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="summary">Summary</SelectItem>
-                          <SelectItem value="detailed">Detailed</SelectItem>
-                          <SelectItem value="analytics">Analytics</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Email Report</Label>
-                      <Input placeholder="Enter email address" />
-                    </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-3">Location</th>
+                          <th className="text-left p-3">County</th>
+                          <th className="text-left p-3">Type</th>
+                          <th className="text-left p-3">Status</th>
+                          <th className="text-left p-3">Date</th>
+                          <th className="text-left p-3">People Reached</th>
+                          <th className="text-left p-3">Agent</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.report_data
+                          .slice(0, 20)
+                          .map((item: any) => (
+                            <tr
+                              key={item.id}
+                              className="border-b hover:bg-gray-50"
+                            >
+                              <td className="p-3 font-medium">
+                                {item.location_name}
+                              </td>
+                              <td className="p-3">{item.county}</td>
+                              <td className="p-3">{item.location_type}</td>
+                              <td className="p-3">
+                                <span
+                                  className={`px-2 py-1 rounded text-xs ${
+                                    item.status === "Visited"
+                                      ? "bg-green-100 text-green-800"
+                                      : item.status === "Scheduled"
+                                        ? "bg-blue-100 text-blue-800"
+                                        : "bg-red-100 text-red-800"
+                                  }`}
+                                >
+                                  {item.status}
+                                </span>
+                              </td>
+                              <td className="p-3">{item.visit_date}</td>
+                              <td className="p-3">{item.people_reached}</td>
+                              <td className="p-3">
+                                {item.agent_name || "N/A"}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">
+                    No activation data found for the selected filters.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

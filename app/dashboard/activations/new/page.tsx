@@ -15,72 +15,141 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Save,
   MapPin,
-  User,
   Calendar,
-  Users,
-  Camera,
   CheckCircle,
   ArrowLeft,
+  Wifi,
+  Battery,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
+import { createActivation } from "@/lib/api/activations";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 const COUNTIES = [
+  "Murang'a",
+  "Nyeri",
+  "Kericho",
+  "Narok",
+  "Meru",
+  "Isiolo",
   "Nairobi",
   "Mombasa",
   "Kisumu",
   "Nakuru",
   "Eldoret",
   "Kisii",
-  "Kakamega",
-  "Bungoma",
-  "Busia",
-  "Siaya",
-  "Homa Bay",
-  "Migori",
-  "Kisii",
-  "Nyamira",
 ];
 
-const AGENTS = [
-  "John Doe",
-  "Jane Smith",
-  "Robert Johnson",
-  "Sarah Williams",
-  "Michael Brown",
-];
+const LOCATION_TYPES = ["School", "Market", "Institution"] as const;
+const INTERNET_METHODS = ["WiFi", "Powerbank", "Both"] as const;
+const STATUS_OPTIONS = ["Scheduled", "Visited", "Cancelled"] as const;
 
 export default function AddActivationPage() {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+
   const [formData, setFormData] = useState({
-    locationName: "",
     county: "",
-    address: "",
-    coordinates: "",
-    agentName: "",
-    activationDate: "",
-    peopleReached: "",
-    contactPerson: "",
-    contactPhone: "",
-    status: "scheduled",
+    location_type: "Market" as "School" | "Market" | "Institution",
+    location_name: "",
+    status: "Visited" as "Scheduled" | "Visited" | "Cancelled",
+    activity_awareness: false,
+    activity_training: false,
+    activity_demo: false,
+    giga_explained: false,
+    internet_method: "" as "WiFi" | "Powerbank" | "Both" | "",
     notes: "",
-    photos: [] as string[],
-    hasElectricity: false,
-    hasSecurity: false,
-    hasShed: false,
-    chargerInstalled: false,
+    visit_date: new Date().toISOString().split("T")[0],
   });
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const validateForm = () => {
+    if (!formData.county) {
+      toast({
+        title: "County Required",
+        description: "Please select a county",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!formData.location_name.trim()) {
+      toast({
+        title: "Location Name Required",
+        description: "Please enter the location name",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!formData.visit_date) {
+      toast({
+        title: "Visit Date Required",
+        description: "Please select the visit date",
+        variant: "destructive",
+      });
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement API call
-    console.log("Form submitted:", formData);
+
+    if (!validateForm()) return;
+
+    try {
+      setLoading(true);
+
+      const submissionData = {
+        ...formData,
+        agent_id: 1, // Get from auth session
+        people_reached: 0, // Will be updated later with contacts
+        male_count: 0,
+        female_count: 0,
+        phone_contacts: 0,
+        email_contacts: 0,
+        activity_awareness: formData.activity_awareness,
+        activity_training: formData.activity_training,
+        activity_demo: formData.activity_demo,
+        giga_explained: formData.giga_explained,
+      };
+
+      console.log("Submitting activation:", submissionData);
+
+      const response = await createActivation(submissionData);
+
+      if (response.success) {
+        toast({
+          title: "Success!",
+          description: "Activation location saved. You can now add contacts.",
+        });
+
+        // Redirect to the activation list or show success with options
+        setTimeout(() => {
+          router.push("/dashboard/activations/list");
+        }, 1500);
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (error: any) {
+      console.error("Submission error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save activation",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -91,334 +160,304 @@ export default function AddActivationPage() {
           <Link href="/activations">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
+              Back to Dashboard
             </Button>
           </Link>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Add New Activation
+              Quick Activation Entry
             </h1>
             <p className="text-gray-600 mt-1">
-              Submit new activation data or update existing records
+              Add location details first, collect contacts later
             </p>
           </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Location Details */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2" />
-                  Location Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="locationName">Location Name *</Label>
-                    <Input
-                      id="locationName"
-                      placeholder="e.g., Nakuru Main Market"
-                      value={formData.locationName}
-                      onChange={(e) =>
-                        handleInputChange("locationName", e.target.value)
-                      }
-                      required
-                    />
-                  </div>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="h-5 w-5 mr-2" />
+                Location Information
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="county">County *</Label>
+                  <Select
+                    value={formData.county}
+                    onValueChange={(value) =>
+                      handleInputChange("county", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select county" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTIES.map((county) => (
+                        <SelectItem key={county} value={county}>
+                          {county}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="county">County *</Label>
-                    <Select
-                      value={formData.county}
-                      onValueChange={(value) =>
-                        handleInputChange("county", value)
+                <div className="space-y-2">
+                  <Label htmlFor="location_type">Location Type *</Label>
+                  <Select
+                    value={formData.location_type}
+                    onValueChange={(value: any) =>
+                      handleInputChange("location_type", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LOCATION_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <Label htmlFor="location_name">Location Name *</Label>
+                  <Input
+                    id="location_name"
+                    placeholder="e.g., Murang'a Main Market, Kericho Primary School"
+                    value={formData.location_name}
+                    onChange={(e) =>
+                      handleInputChange("location_name", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="visit_date">Visit Date *</Label>
+                  <Input
+                    id="visit_date"
+                    type="date"
+                    value={formData.visit_date}
+                    onChange={(e) =>
+                      handleInputChange("visit_date", e.target.value)
+                    }
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="status">Status *</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: any) =>
+                      handleInputChange("status", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {status}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Right Column - Activities & Notes */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CheckCircle className="h-5 w-5 mr-2" />
+                Activities & Assessment
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-medium mb-3">Activities Conducted</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="activity_awareness"
+                      checked={formData.activity_awareness}
+                      onCheckedChange={(checked) =>
+                        handleInputChange("activity_awareness", checked)
                       }
+                    />
+                    <Label
+                      htmlFor="activity_awareness"
+                      className="cursor-pointer"
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select county" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {COUNTIES.map((county) => (
-                          <SelectItem key={county} value={county}>
-                            {county}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      Awareness Session
+                    </Label>
                   </div>
 
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Input
-                      id="address"
-                      placeholder="Street address or landmark"
-                      value={formData.address}
-                      onChange={(e) =>
-                        handleInputChange("address", e.target.value)
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="activity_training"
+                      checked={formData.activity_training}
+                      onCheckedChange={(checked) =>
+                        handleInputChange("activity_training", checked)
                       }
                     />
+                    <Label
+                      htmlFor="activity_training"
+                      className="cursor-pointer"
+                    >
+                      Training
+                    </Label>
                   </div>
 
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="coordinates">GPS Coordinates</Label>
-                    <Input
-                      id="coordinates"
-                      placeholder="e.g., -1.2921, 36.8219"
-                      value={formData.coordinates}
-                      onChange={(e) =>
-                        handleInputChange("coordinates", e.target.value)
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="activity_demo"
+                      checked={formData.activity_demo}
+                      onCheckedChange={(checked) =>
+                        handleInputChange("activity_demo", checked)
                       }
                     />
+                    <Label htmlFor="activity_demo" className="cursor-pointer">
+                      Demo Session
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="giga_explained"
+                      checked={formData.giga_explained}
+                      onCheckedChange={(checked) =>
+                        handleInputChange("giga_explained", checked)
+                      }
+                    />
+                    <Label htmlFor="giga_explained" className="cursor-pointer">
+                      GIGA Explained
+                    </Label>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  Activation Details
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="agentName">Assigned Agent *</Label>
-                    <Select
-                      value={formData.agentName}
-                      onValueChange={(value) =>
-                        handleInputChange("agentName", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select agent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AGENTS.map((agent) => (
-                          <SelectItem key={agent} value={agent}>
-                            {agent}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="internet_method">Internet Method Used</Label>
+                <Select
+                  value={formData.internet_method}
+                  onValueChange={(value: any) =>
+                    handleInputChange("internet_method", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select method used" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="WiFi">
+                      <div className="flex items-center">
+                        <Wifi className="h-4 w-4 mr-2" />
+                        WiFi Only
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Powerbank">
+                      <div className="flex items-center">
+                        <Battery className="h-4 w-4 mr-2" />
+                        Powerbank Only
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Both">Both WiFi & Powerbank</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="activationDate">Activation Date *</Label>
-                    <Input
-                      id="activationDate"
-                      type="date"
-                      value={formData.activationDate}
-                      onChange={(e) =>
-                        handleInputChange("activationDate", e.target.value)
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="peopleReached">People Reached *</Label>
-                    <Input
-                      id="peopleReached"
-                      type="number"
-                      placeholder="Estimated number"
-                      value={formData.peopleReached}
-                      onChange={(e) =>
-                        handleInputChange("peopleReached", e.target.value)
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="status">Status *</Label>
-                    <Select
-                      value={formData.status}
-                      onValueChange={(value) =>
-                        handleInputChange("status", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
-                        <SelectItem value="visited">Visited</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                        <SelectItem value="cancelled">Cancelled</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Users className="h-5 w-5 mr-2" />
-                  Contact Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="contactPerson">Contact Person</Label>
-                    <Input
-                      id="contactPerson"
-                      placeholder="Name of contact person"
-                      value={formData.contactPerson}
-                      onChange={(e) =>
-                        handleInputChange("contactPerson", e.target.value)
-                      }
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="contactPhone">Contact Phone</Label>
-                    <Input
-                      id="contactPhone"
-                      placeholder="Phone number"
-                      value={formData.contactPhone}
-                      onChange={(e) =>
-                        handleInputChange("contactPhone", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Additional Notes</CardTitle>
-              </CardHeader>
-              <CardContent>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes & Observations</Label>
                 <Textarea
-                  placeholder="Add any additional notes or observations..."
+                  id="notes"
+                  placeholder="Brief notes about the activation..."
                   value={formData.notes}
                   onChange={(e) => handleInputChange("notes", e.target.value)}
                   rows={4}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-between items-center mt-6 p-4 bg-gray-50 rounded-lg">
+          <div>
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">Tip:</span> Save location first,
+              then add contacts from the activation list
+            </p>
           </div>
-
-          {/* Right Column - Status & Actions */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  Site Assessment
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="hasElectricity" className="cursor-pointer">
-                    Electricity Available
-                  </Label>
-                  <Switch
-                    id="hasElectricity"
-                    checked={formData.hasElectricity}
-                    onCheckedChange={(checked) =>
-                      handleInputChange("hasElectricity", checked)
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="hasSecurity" className="cursor-pointer">
-                    Security Present
-                  </Label>
-                  <Switch
-                    id="hasSecurity"
-                    checked={formData.hasSecurity}
-                    onCheckedChange={(checked) =>
-                      handleInputChange("hasSecurity", checked)
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="hasShed" className="cursor-pointer">
-                    Shelter/Shed Available
-                  </Label>
-                  <Switch
-                    id="hasShed"
-                    checked={formData.hasShed}
-                    onCheckedChange={(checked) =>
-                      handleInputChange("hasShed", checked)
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="chargerInstalled" className="cursor-pointer">
-                    Charger Installed
-                  </Label>
-                  <Switch
-                    id="chargerInstalled"
-                    checked={formData.chargerInstalled}
-                    onCheckedChange={(checked) =>
-                      handleInputChange("chargerInstalled", checked)
-                    }
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Camera className="h-5 w-5 mr-2" />
-                  Photo Upload
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <Camera className="h-8 w-8 mx-auto text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500 mb-2">
-                    Upload photos of the location
-                  </p>
-                  <Button type="button" variant="outline" size="sm">
-                    Select Photos
-                  </Button>
-                </div>
-                {formData.photos.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {formData.photos.map((photo, index) => (
-                      <div key={index} className="relative">
-                        <div className="aspect-square bg-gray-100 rounded-md"></div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="pt-6">
-                <div className="space-y-4">
-                  <Button type="submit" className="w-full" size="lg">
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Activation
-                  </Button>
-                  <Button type="button" variant="outline" className="w-full">
-                    Save as Draft
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <div className="flex space-x-3">
+            <Link href="/activations/list">
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </Link>
+            <Button type="submit" disabled={loading}>
+              {loading ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2"></div>
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Location
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </form>
+
+      {/* Quick Stats Preview */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Summary</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-xl font-bold text-blue-600">
+                {formData.county || "Not set"}
+              </div>
+              <div className="text-sm text-gray-500">County</div>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-xl font-bold text-green-600">
+                {formData.location_type}
+              </div>
+              <div className="text-sm text-gray-500">Type</div>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-xl font-bold text-purple-600">
+                {formData.status}
+              </div>
+              <div className="text-sm text-gray-500">Status</div>
+            </div>
+            <div className="text-center p-4 border rounded-lg">
+              <div className="text-xl font-bold text-orange-600">
+                {formData.visit_date}
+              </div>
+              <div className="text-sm text-gray-500">Visit Date</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
