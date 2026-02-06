@@ -67,7 +67,7 @@ export default function LoginPage() {
           id: "3",
           email: "stephannie@chargebyte.io",
           name: "Stephannie Mwangi",
-          role: "super_admin" as const,
+          role: "staff" as const,
         },
       },
       {
