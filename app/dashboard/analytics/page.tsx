@@ -267,10 +267,19 @@ export default function AnalyticsPage() {
   const newCustomers = dashboardData?.new_customers_30d?.last30Days || 0;
 
   // Get current gender data
-  const currentGenderData =
-    genderData.find((item) => item.period === "Last 30 Days") || genderData[0];
-  const femalePercentage =
-    currentGenderData?.female_percentage || womenPercentage;
+  const currentGenderData = genderData.find(
+    (item: any) => item.period === "Last 30 Days",
+  ) ||
+    genderData[0] || {
+      period: "Last 30 Days",
+      total_customers: 0,
+      female_customers: 0,
+      male_customers: 0,
+      other_gender: 0,
+      female_percentage: 0,
+      male_percentage: 0,
+      other_percentage: 0,
+    };
 
   // Prepare gender data for pie chart
   const genderChartData = currentGenderData
@@ -741,7 +750,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="text-sm font-medium text-gray-900">Women</div>
                 <div className="text-xs text-gray-600">
-                  {currentGenderData.female_customers.toLocaleString()}{" "}
+                  {(currentGenderData.female_customers || 0).toLocaleString()}{" "}
                   customers
                 </div>
               </div>
@@ -752,7 +761,8 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="text-sm font-medium text-gray-900">Men</div>
                 <div className="text-xs text-gray-600">
-                  {currentGenderData.male_customers.toLocaleString()} customers
+                  {(currentGenderData.male_customers || 0).toLocaleString()}{" "}
+                  customers
                 </div>
               </div>
 
@@ -764,7 +774,8 @@ export default function AnalyticsPage() {
                   Other/Not Specified
                 </div>
                 <div className="text-xs text-gray-600">
-                  {currentGenderData.other_gender.toLocaleString()} customers
+                  {(currentGenderData.other_gender || 0).toLocaleString()}{" "}
+                  customers
                 </div>
               </div>
             </div>
