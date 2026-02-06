@@ -34,12 +34,12 @@ const menuItems = [
     icon: Megaphone,
     roles: ["super_admin", "staff", "ad_client"],
   },
-  // {
-  //   title: 'Analytics',
-  //   href: '/dashboard/analytics',
-  //   icon: BarChart3,
-  //   roles: ['super_admin', 'staff'],
-  // },
+  {
+    title: "Analytics",
+    href: "/dashboard/analytics",
+    icon: BarChart3,
+    roles: ["super_admin", "staff"],
+  },
   {
     title: "Stations",
     href: "/dashboard/admin/stations",
@@ -77,7 +77,7 @@ export function Sidebar() {
   const { user, hasPermission } = useAuth();
 
   const filteredMenuItems = menuItems.filter((item) =>
-    hasPermission(item.roles as any)
+    hasPermission(item.roles as any),
   );
 
   return (
@@ -109,7 +109,7 @@ export function Sidebar() {
                 "flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-200 group",
                 isActive
                   ? "bg-primary-50 text-primary-700 border-l-4 border-primary-500"
-                  : "text-gray-700 hover:bg-gray-50 hover:text-primary-600"
+                  : "text-gray-700 hover:bg-gray-50 hover:text-primary-600",
               )}
             >
               <Icon
@@ -117,7 +117,7 @@ export function Sidebar() {
                   "h-5 w-5 transition-colors",
                   isActive
                     ? "text-primary-600"
-                    : "text-gray-500 group-hover:text-primary-500"
+                    : "text-gray-500 group-hover:text-primary-500",
                 )}
               />
               <span className="font-medium">{item.title}</span>
