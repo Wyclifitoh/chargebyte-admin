@@ -61,6 +61,16 @@ export default function LoginPage() {
         },
       },
       {
+        email: "stephannie@chargebyte.io",
+        password: "@!CBAfrica2023",
+        userData: {
+          id: "3",
+          email: "stephannie@chargebyte.io",
+          name: "Stephannie Mwangi",
+          role: "super_admin" as const,
+        },
+      },
+      {
         email: "partner@example.com",
         password: "partner123",
         userData: {
