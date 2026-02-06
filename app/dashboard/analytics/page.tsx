@@ -17,7 +17,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { mockStations } from "@/lib/mock-data";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   LineChart,
@@ -41,16 +40,13 @@ import {
   Banknote,
   Users,
   Battery,
-  Calendar,
   Download,
   RefreshCw,
   User,
   MapPin,
   Star,
-  Activity,
 } from "lucide-react";
 import {
-  getOrders,
   getOrderStats,
   getDashboardData,
   getAllCustomerAnalytics,
@@ -69,11 +65,6 @@ const COLORS = [
   "#ef4444",
   "#8b5cf6",
 ];
-const GENDER_COLORS = {
-  Female: "#ec4899",
-  Male: "#3b82f6",
-  Other: "#6b7280",
-};
 
 interface DashboardData {
   total_customers?: { overall: number; last30Days: number };
@@ -266,7 +257,7 @@ export default function AnalyticsPage() {
   const womenPercentage = dashboardData?.women_percentage?.last30Days || 0;
   const newCustomers = dashboardData?.new_customers_30d?.last30Days || 0;
 
-  // Get current gender data
+  // Get current gender data with safe defaults
   const currentGenderData = genderData.find(
     (item: any) => item.period === "Last 30 Days",
   ) ||
@@ -280,6 +271,11 @@ export default function AnalyticsPage() {
       male_percentage: 0,
       other_percentage: 0,
     };
+
+  const femalePercentage =
+    currentGenderData?.female_percentage !== undefined
+      ? currentGenderData.female_percentage
+      : womenPercentage;
 
   // Prepare gender data for pie chart
   const genderChartData = currentGenderData
@@ -305,40 +301,48 @@ export default function AnalyticsPage() {
   // Prepare station performance data for charts
   const stationRevenueData = stationPerformance.slice(0, 8).map((station) => ({
     name: station.name.split(" ")[0],
-    revenue: station.revenue,
-    rentals: station.rentals,
-    utilization: station.utilization_rate,
+    revenue: station.revenue || 0,
+    rentals: station.rentals || 0,
+    utilization: station.utilization_rate || 0,
   }));
 
   // Regional performance data from stations
-
   const regionalData: RegionalData[] = stationPerformance.reduce<
     RegionalData[]
   >((acc, station) => {
     const existingRegion = acc.find((r) => r.region === station.region);
 
     if (existingRegion) {
-      existingRegion.revenue += station.revenue;
-      existingRegion.rentals += station.rentals;
+      existingRegion.revenue += station.revenue || 0;
+      existingRegion.rentals += station.rentals || 0;
     } else {
       acc.push({
-        region: station.region,
-        revenue: station.revenue,
-        rentals: station.rentals,
+        region: station.region || "Unknown",
+        revenue: station.revenue || 0,
+        rentals: station.rentals || 0,
       });
     }
 
     return acc;
   }, []);
 
-  const formatCurrency = (value: number) => `Ksh.${value.toLocaleString()}`;
-  const formatNumber = (num: number) => num.toLocaleString();
+  // Utility functions with null safety
+  const formatCurrency = (value: number | null | undefined) => {
+    const num = value ?? 0;
+    return `Ksh.${num.toLocaleString()}`;
+  };
+
+  const formatNumber = (num: number | null | undefined) => {
+    const value = num ?? 0;
+    return value.toLocaleString();
+  };
 
   const formatPercentage = (value: number | null | undefined) => {
-    if (value === null || value === undefined || isNaN(Number(value))) {
+    const num = Number(value);
+    if (isNaN(num) || value === null || value === undefined) {
       return "0.0%";
     }
-    return `${Number(value).toFixed(1)}%`;
+    return `${num.toFixed(1)}%`;
   };
 
   const getTimeRangeLabel = () => {
@@ -453,7 +457,7 @@ export default function AnalyticsPage() {
               {formatNumber(totalCustomers)}
             </div>
             <p className="text-xs text-gray-600">
-              {repeatCustomers} repeat customers
+              {formatNumber(repeatCustomers)} repeat customers
             </p>
           </CardContent>
         </Card>
@@ -483,7 +487,7 @@ export default function AnalyticsPage() {
               {formatPercentage(femalePercentage)}
             </div>
             <p className="text-xs text-gray-600">
-              {currentGenderData?.female_customers || 0} customers
+              {formatNumber(currentGenderData?.female_customers)} customers
             </p>
           </CardContent>
         </Card>
@@ -504,20 +508,25 @@ export default function AnalyticsPage() {
               <AreaChart data={monthlyTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis tickFormatter={(value) => `Ksh.${value / 1000}K`} />
+                <YAxis
+                  tickFormatter={(value) => `Ksh.${(value / 1000).toFixed(0)}K`}
+                />
                 <Tooltip
                   formatter={(value, name, props) => {
-                    // Use the dataKey from props to determine the series
+                    const safeValue = value ?? 0;
                     const dataKey = props.dataKey;
                     if (dataKey === "revenue") {
                       return [
-                        `Ksh.${Number(value).toLocaleString()}`,
+                        `Ksh.${Number(safeValue).toLocaleString()}`,
                         "Revenue",
                       ];
                     } else if (dataKey === "rentals") {
-                      return [`${Number(value).toLocaleString()}`, "Rentals"];
+                      return [
+                        `${Number(safeValue).toLocaleString()}`,
+                        "Rentals",
+                      ];
                     }
-                    return [value, name];
+                    return [safeValue, name];
                   }}
                 />
                 <Legend />
@@ -576,9 +585,11 @@ export default function AnalyticsPage() {
                       )}
                     </div>
                     <div>
-                      <div className="font-medium text-sm">{station.name}</div>
+                      <div className="font-medium text-sm">
+                        {station.name || "Unknown Station"}
+                      </div>
                       <div className="text-xs text-gray-500">
-                        {station.location}
+                        {station.location || "Location not available"}
                       </div>
                     </div>
                   </div>
@@ -587,7 +598,7 @@ export default function AnalyticsPage() {
                       {formatCurrency(station.revenue)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {station.rentals} rentals
+                      {formatNumber(station.rentals)} rentals
                     </div>
                   </div>
                 </div>
@@ -612,7 +623,9 @@ export default function AnalyticsPage() {
               <BarChart data={stationRevenueData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => `Ksh.${value / 1000}K`} />
+                <YAxis
+                  tickFormatter={(value) => `Ksh.${(value / 1000).toFixed(0)}K`}
+                />
                 <Tooltip
                   formatter={(value) => [
                     `Ksh.${Number(value).toLocaleString()}`,
@@ -641,9 +654,6 @@ export default function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  // label={({ region, revenue }) =>
-                  //   `${region}: ${formatCurrency(revenue)}`
-                  // }
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="revenue"
@@ -697,10 +707,16 @@ export default function AnalyticsPage() {
                     key={station.cabinet_id}
                     className="border-b hover:bg-gray-50"
                   >
-                    <td className="p-3 font-medium">{station.name}</td>
-                    <td className="p-3">{station.location}</td>
+                    <td className="p-3 font-medium">
+                      {station.name || "Unknown"}
+                    </td>
                     <td className="p-3">
-                      <Badge variant="outline">{station.region}</Badge>
+                      {station.location || "Not available"}
+                    </td>
+                    <td className="p-3">
+                      <Badge variant="outline">
+                        {station.region || "Unknown"}
+                      </Badge>
                     </td>
                     <td className="p-3 text-right">
                       {formatCurrency(station.revenue_7d)}
@@ -711,13 +727,15 @@ export default function AnalyticsPage() {
                     <td className="p-3 text-right">
                       {formatCurrency(station.revenue_3m)}
                     </td>
-                    <td className="p-3 text-right">{station.rentals_total}</td>
+                    <td className="p-3 text-right">
+                      {formatNumber(station.rentals_total)}
+                    </td>
                     <td className="p-3 text-right">
                       <Badge
                         variant={
-                          station.current_utilization > 70
+                          (station.current_utilization || 0) > 70
                             ? "default"
-                            : station.current_utilization > 40
+                            : (station.current_utilization || 0) > 40
                               ? "secondary"
                               : "outline"
                         }
@@ -750,8 +768,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="text-sm font-medium text-gray-900">Women</div>
                 <div className="text-xs text-gray-600">
-                  {(currentGenderData.female_customers || 0).toLocaleString()}{" "}
-                  customers
+                  {formatNumber(currentGenderData.female_customers)} customers
                 </div>
               </div>
 
@@ -761,8 +778,7 @@ export default function AnalyticsPage() {
                 </div>
                 <div className="text-sm font-medium text-gray-900">Men</div>
                 <div className="text-xs text-gray-600">
-                  {(currentGenderData.male_customers || 0).toLocaleString()}{" "}
-                  customers
+                  {formatNumber(currentGenderData.male_customers)} customers
                 </div>
               </div>
 
@@ -774,8 +790,7 @@ export default function AnalyticsPage() {
                   Other/Not Specified
                 </div>
                 <div className="text-xs text-gray-600">
-                  {(currentGenderData.other_gender || 0).toLocaleString()}{" "}
-                  customers
+                  {formatNumber(currentGenderData.other_gender)} customers
                 </div>
               </div>
             </div>
@@ -804,20 +819,18 @@ export default function AnalyticsPage() {
                             {periodData.period}
                           </td>
                           <td className="p-2">
-                            {(periodData.total_customers ?? 0).toLocaleString()}
+                            {formatNumber(periodData.total_customers)}
                           </td>
                           <td className="p-2">
-                            {(
-                              periodData.female_customers ?? 0
-                            ).toLocaleString()}{" "}
-                            ({formatPercentage(periodData.female_percentage)})
+                            {formatNumber(periodData.female_customers)} (
+                            {formatPercentage(periodData.female_percentage)})
                           </td>
                           <td className="p-2">
-                            {(periodData.male_customers ?? 0).toLocaleString()}{" "}
-                            ({formatPercentage(periodData.male_percentage)})
+                            {formatNumber(periodData.male_customers)} (
+                            {formatPercentage(periodData.male_percentage)})
                           </td>
                           <td className="p-2">
-                            {(periodData.other_gender ?? 0).toLocaleString()} (
+                            {formatNumber(periodData.other_gender)} (
                             {formatPercentage(periodData.other_percentage)})
                           </td>
                         </tr>
@@ -832,7 +845,7 @@ export default function AnalyticsPage() {
       )}
 
       {/* Customer Loyalty */}
-      {customerAnalytics?.loyalty && (
+      {customerAnalytics?.loyalty?.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Customer Loyalty Segments</CardTitle>
@@ -844,20 +857,20 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {customerAnalytics.loyalty.map((segment: any, index: number) => (
                 <div
-                  key={segment.loyalty_segment}
+                  key={segment.loyalty_segment || `segment-${index}`}
                   className="text-center p-4 border rounded-lg"
                 >
                   <div
                     className={`text-2xl font-bold mb-2`}
                     style={{ color: COLORS[index % COLORS.length] }}
                   >
-                    {segment.customer_count.toLocaleString()}
+                    {formatNumber(segment.customer_count)}
                   </div>
                   <div className="text-sm font-medium text-gray-900">
-                    {segment.loyalty_segment}
+                    {segment.loyalty_segment || "Unknown"}
                   </div>
                   <div className="text-xs text-gray-600">
-                    {segment.percentage}% of total
+                    {formatPercentage(segment.percentage)} of total
                   </div>
                 </div>
               ))}
