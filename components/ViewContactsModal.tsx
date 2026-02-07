@@ -204,7 +204,8 @@ export default function ViewContactsModal({
   const getSurveyLabel = (field: string, value: number) => {
     if (!value) return "-";
     const labels = surveyLabels[field as keyof typeof surveyLabels]?.labels;
-    return labels?.[value] || `${value}/5`;
+    const labelValue = value as 1 | 2 | 3 | 4 | 5;
+    return labels?.[labelValue] || `${value}/5`;
   };
 
   return (
