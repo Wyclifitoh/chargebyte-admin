@@ -32,6 +32,9 @@ import { useRouter } from "next/navigation";
 
 const COUNTIES = [
   "Murang'a",
+  "Kiambu",
+  "Embu",
+  "Machakos",
   "Nyeri",
   "Kericho",
   "Narok",
