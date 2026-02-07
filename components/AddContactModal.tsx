@@ -1,4 +1,3 @@
-// app/(dashboard)/activations/list/components/AddContactModal.tsx
 "use client";
 
 import { useState } from "react";

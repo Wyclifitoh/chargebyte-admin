@@ -25,11 +25,10 @@ export interface CreateActivationData {
   location_type: "School" | "Market" | "Institution";
   location_name: string;
   status: "Scheduled" | "Visited" | "Cancelled";
-  // Change these from boolean to number if backend expects 1/0
-  activity_awareness?: number; // Changed from boolean
-  activity_training?: number; // Changed from boolean
-  activity_demo?: number; // Changed from boolean
-  giga_explained?: number; // Changed from boolean
+  activity_awareness?: number;
+  activity_training?: number;
+  activity_demo?: number;
+  giga_explained?: number;
   internet_method?: "WiFi" | "Powerbank" | "Both" | "";
   notes?: string;
   visit_date: string;
@@ -48,6 +47,12 @@ export interface ContactData {
   age_range: string;
   occupation?: string;
   interests?: string;
+  electricity_access?: number;
+  phone_power_outage?: number;
+  charge_station_help?: number;
+  pay_for_charging?: number;
+  internet_access_frequency?: number;
+  school_connectivity_awareness?: number;
 }
 
 // Existing activation APIs
