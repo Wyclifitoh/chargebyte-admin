@@ -53,11 +53,11 @@ const menuItems = [
     icon: MapPin,
     roles: ["super_admin", "staff"],
     items: [
-      {
-        title: "Dashboard",
-        href: "/dashboard/activations",
-        icon: PieChart,
-      },
+      // {
+      //   title: "Dashboard",
+      //   href: "/dashboard/activations",
+      //   icon: PieChart,
+      // },
       {
         title: "Add Activation",
         href: "/dashboard/activations/new",
