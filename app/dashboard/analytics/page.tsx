@@ -84,13 +84,6 @@ interface OrderStats {
   cancelledOrders: number;
 }
 
-interface CustomerDashboardMetric {
-  metric: string;
-  overall_value: number;
-  last_30_days_value: number;
-  last_3_months_value: number;
-}
-
 interface CustomerAnalytics {
   dashboard?: {
     active_customers: {
@@ -270,10 +263,6 @@ export default function AnalyticsPage() {
       setOrderStats(statsResponse.data);
       setCustomerAnalytics(analyticsResponse.data);
       console.log("Customer Analytics Raw Data:", analyticsResponse.data);
-      console.log(
-        "Customer Dashboard Array:",
-        analyticsResponse.data?.customerDashboard,
-      );
 
       // Handle demographics response - it might be nested or direct
       if (
@@ -339,8 +328,6 @@ export default function AnalyticsPage() {
 
   // Extract customer metrics from the dashboard object
   console.log("Customer Analytics:", customerAnalytics);
-
-  // The data is in customerAnalytics.dashboard
 
   // The data is in customerAnalytics.dashboard
   const dashboardMetrics = customerAnalytics?.dashboard;
@@ -758,7 +745,6 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="revenue"
-                  // label={(entry) => entry.region}
                 >
                   {regionalData.map((entry, index) => (
                     <Cell
@@ -857,7 +843,6 @@ export default function AnalyticsPage() {
         </CardContent>
       </Card>
 
-      {/* Detailed Gender Analytics */}
       {/* Detailed Gender Analytics */}
       {currentGenderData && (
         <Card>
