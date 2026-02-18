@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { mockStations } from "@/lib/mock-data";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
   LineChart,
@@ -40,13 +41,16 @@ import {
   Banknote,
   Users,
   Battery,
+  Calendar,
   Download,
   RefreshCw,
   User,
   MapPin,
   Star,
+  Activity,
 } from "lucide-react";
 import {
+  getOrders,
   getOrderStats,
   getDashboardData,
   getAllCustomerAnalytics,
@@ -65,13 +69,17 @@ const COLORS = [
   "#ef4444",
   "#8b5cf6",
 ];
+const GENDER_COLORS = {
+  Female: "#ec4899",
+  Male: "#3b82f6",
+  Other: "#6b7280",
+};
 
-// Define proper interfaces based on actual API response
-interface ApiDashboardData {
-  total_customers?: { overall: number; last_30_days_value: number };
-  repeat_customers?: { overall: number; last_30_days_value: number };
-  women_percentage?: { overall: number; last_30_days_value: number };
-  new_customers?: { overall: number | null; last_30_days_value: number };
+interface DashboardData {
+  total_customers?: { overall: number; last30Days: number };
+  repeat_customers?: { overall: number; last30Days: number };
+  women_percentage?: { overall: number; last30Days: number };
+  new_customers_30d?: { overall: number | null; last30Days: number };
 }
 
 interface OrderStats {
@@ -84,10 +92,20 @@ interface OrderStats {
   cancelledOrders: number;
 }
 
-interface MonthlyTrend {
-  month_number: number;
+interface GenderData {
+  period: string;
+  total_customers: number;
+  female_customers: number;
+  male_customers: number;
+  other_gender: number;
+  female_percentage: number;
+  male_percentage: number;
+  other_percentage: number;
+}
+
+interface MonthlyTrendData {
   month: string;
-  revenue: string;
+  revenue: number;
   rentals: number;
 }
 
@@ -100,40 +118,58 @@ interface StationPerformance {
   status: string;
   totalSlots: number;
   availableSlots: number;
-  revenue: string;
+  revenue: number;
   rentals: number;
   customers: number;
-  avg_revenue_per_rental: string;
-  utilization_rate: string;
+  avg_revenue_per_rental: number;
+  utilization_rate: number;
+  coordinates: {
+    lat: number;
+    lng: number;
+  };
 }
 
-interface TopStation {
+interface StationComparison {
   cabinet_id: string;
   name: string;
   location: string;
   region: string;
-  revenue: string;
-  rentals: number;
-  unique_customers: number;
-  avg_revenue_per_rental: string;
-  utilization_rate: string;
+  revenue_7d: number;
+  rentals_7d: number;
+  revenue_30d: number;
+  rentals_30d: number;
+  revenue_3m: number;
+  rentals_3m: number;
+  revenue_total: number;
+  rentals_total: number;
+  totalSlots: number;
+  availableSlots: number;
+  current_utilization: number;
 }
+
+type RegionalData = {
+  region: string;
+  revenue: number;
+  rentals: number;
+};
 
 export default function AnalyticsPage() {
   const { hasPermission } = useAuth();
   const [timeRange, setTimeRange] = useState("30d");
-  const [dashboardData, setDashboardData] = useState<ApiDashboardData | null>(
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
     null,
   );
   const [orderStats, setOrderStats] = useState<OrderStats | null>(null);
   const [customerAnalytics, setCustomerAnalytics] = useState<any>(null);
-  const [genderData, setGenderData] = useState<any[]>([]);
-  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
+  const [genderData, setGenderData] = useState<GenderData[]>([]);
+  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrendData[]>([]);
   const [stationPerformance, setStationPerformance] = useState<
     StationPerformance[]
   >([]);
-  const [stationComparison, setStationComparison] = useState<any[]>([]);
-  const [topStations, setTopStations] = useState<TopStation[]>([]);
+  const [stationComparison, setStationComparison] = useState<
+    StationComparison[]
+  >([]);
+  const [topStations, setTopStations] = useState<StationPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -161,22 +197,6 @@ export default function AnalyticsPage() {
     }
   };
 
-  // Helper function to parse string revenue to number
-  const parseRevenue = (revenue: string | number): number => {
-    if (typeof revenue === "string") {
-      return parseFloat(revenue) || 0;
-    }
-    return revenue || 0;
-  };
-
-  // Helper function to parse string percentage to number
-  const parsePercentage = (percentage: string | number): number => {
-    if (typeof percentage === "string") {
-      return parseFloat(percentage) || 0;
-    }
-    return percentage || 0;
-  };
-
   // Fetch analytics data
   const fetchAnalyticsData = async () => {
     try {
@@ -190,6 +210,7 @@ export default function AnalyticsPage() {
         demographicsResponse,
         monthlyTrendsResponse,
         stationPerformanceResponse,
+        stationComparisonResponse,
         topStationsResponse,
       ] = await Promise.all([
         getDashboardData(),
@@ -198,42 +219,35 @@ export default function AnalyticsPage() {
         getCustomerDemographics(),
         getMonthlyTrends(),
         getStationPerformance(timeRange),
+        getStationPerformanceComparison(),
         getTopPerformingStations(5, timeRange),
       ]);
 
       setDashboardData(dashboardResponse.data);
       setOrderStats(statsResponse.data);
       setCustomerAnalytics(analyticsResponse.data);
-      setGenderData(demographicsResponse.data?.customerDashboard || []);
-      setMonthlyTrends(monthlyTrendsResponse.data?.monthlyTrends || []);
+      setGenderData(demographicsResponse.data || []);
+      setMonthlyTrends(monthlyTrendsResponse.data || []);
       setStationPerformance(stationPerformanceResponse.data || []);
+      setStationComparison(stationComparisonResponse.data || []);
       setTopStations(topStationsResponse.data || []);
-
-      // Create station comparison data from station performance
-      if (stationPerformanceResponse.data) {
-        const comparisonData = stationPerformanceResponse.data.map(
-          (station: StationPerformance) => ({
-            cabinet_id: station.cabinet_id,
-            name: station.name,
-            location: station.location,
-            region: station.region,
-            revenue_7d: parseRevenue(station.revenue),
-            rentals_7d: station.rentals,
-            revenue_30d: parseRevenue(station.revenue),
-            rentals_30d: station.rentals,
-            revenue_3m: parseRevenue(station.revenue),
-            rentals_3m: station.rentals,
-            revenue_total: parseRevenue(station.revenue),
-            rentals_total: station.rentals,
-            totalSlots: station.totalSlots,
-            availableSlots: station.availableSlots,
-            current_utilization: parsePercentage(station.utilization_rate),
-          }),
-        );
-        setStationComparison(comparisonData);
-      }
     } catch (error) {
       console.error("Error fetching analytics data:", error);
+      // Fallback to mock data if API fails
+      setMonthlyTrends([
+        { month: "Jan", revenue: 12400, rentals: 890 },
+        { month: "Feb", revenue: 15600, rentals: 1120 },
+        { month: "Mar", revenue: 18900, rentals: 1350 },
+        { month: "Apr", revenue: 22100, rentals: 1580 },
+        { month: "May", revenue: 19800, rentals: 1420 },
+        { month: "Jun", revenue: 25300, rentals: 1810 },
+        { month: "Jul", revenue: 28700, rentals: 2050 },
+        { month: "Aug", revenue: 31200, rentals: 2230 },
+        { month: "Sep", revenue: 29800, rentals: 2130 },
+        { month: "Oct", revenue: 33400, rentals: 2380 },
+        { month: "Nov", revenue: 36700, rentals: 2620 },
+        { month: "Dec", revenue: 42100, rentals: 3010 },
+      ]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -247,87 +261,75 @@ export default function AnalyticsPage() {
   // Calculate metrics from API data
   const totalRevenue = orderStats?.totalRevenue || 0;
   const totalRentals = orderStats?.totalOrders || 0;
-  const totalCustomers =
-    dashboardData?.total_customers?.last_30_days_value || 0;
-  const repeatCustomers =
-    dashboardData?.repeat_customers?.last_30_days_value || 0;
-  const womenPercentage =
-    dashboardData?.women_percentage?.last_30_days_value || 0;
-  const newCustomers = dashboardData?.new_customers?.last_30_days_value || 0;
+  const totalCustomers = dashboardData?.total_customers?.last30Days || 0;
+  const repeatCustomers = dashboardData?.repeat_customers?.last30Days || 0;
+  const womenPercentage = dashboardData?.women_percentage?.last30Days || 0;
+  const newCustomers = dashboardData?.new_customers_30d?.last30Days || 0;
 
-  // Get current gender data with safe defaults
-  const currentGenderData = genderData.find(
-    (item: any) => item.metric === "active_customers",
-  ) || {
-    overall_value: 0,
-    last_30_days_value: 0,
-    last_3_months_value: 0,
-  };
+  // Get current gender data
+  const currentGenderData =
+    genderData.find((item) => item.period === "Last 30 Days") || genderData[0];
+  const femalePercentage =
+    currentGenderData?.female_percentage || womenPercentage;
 
-  // Prepare gender data for pie chart (you may need to adjust this based on actual gender data structure)
-  const genderChartData = [
-    {
-      name: "Female",
-      value: womenPercentage, // This is a percentage, not actual count
-      percentage: womenPercentage,
-    },
-    {
-      name: "Male",
-      value: 100 - womenPercentage,
-      percentage: 100 - womenPercentage,
-    },
-  ];
+  // Prepare gender data for pie chart
+  const genderChartData = currentGenderData
+    ? [
+        {
+          name: "Female",
+          value: currentGenderData.female_customers,
+          percentage: currentGenderData.female_percentage,
+        },
+        {
+          name: "Male",
+          value: currentGenderData.male_customers,
+          percentage: currentGenderData.male_percentage,
+        },
+        {
+          name: "Other",
+          value: currentGenderData.other_gender,
+          percentage: currentGenderData.other_percentage,
+        },
+      ].filter((item) => item.value > 0)
+    : [];
 
   // Prepare station performance data for charts
   const stationRevenueData = stationPerformance.slice(0, 8).map((station) => ({
-    name: station.name.split(" ")[0] || station.cabinet_id,
-    revenue: parseRevenue(station.revenue),
-    rentals: station.rentals || 0,
-    utilization: parsePercentage(station.utilization_rate),
+    name: station.name.split(" ")[0],
+    revenue: station.revenue,
+    rentals: station.rentals,
+    utilization: station.utilization_rate,
   }));
 
   // Regional performance data from stations
-  const regionalData = stationPerformance.reduce<any[]>((acc, station) => {
+
+  const regionalData: RegionalData[] = stationPerformance.reduce<
+    RegionalData[]
+  >((acc, station) => {
     const existingRegion = acc.find((r) => r.region === station.region);
 
     if (existingRegion) {
-      existingRegion.revenue += parseRevenue(station.revenue);
-      existingRegion.rentals += station.rentals || 0;
+      existingRegion.revenue += station.revenue;
+      existingRegion.rentals += station.rentals;
     } else {
       acc.push({
-        region: station.region || "Unknown",
-        revenue: parseRevenue(station.revenue),
-        rentals: station.rentals || 0,
+        region: station.region,
+        revenue: station.revenue,
+        rentals: station.rentals,
       });
     }
 
     return acc;
   }, []);
 
-  // Prepare monthly trends data for charts
-  const chartMonthlyData = monthlyTrends.map((item) => ({
-    month: item.month,
-    revenue: parseRevenue(item.revenue),
-    rentals: item.rentals,
-  }));
-
-  // Utility functions with null safety
-  const formatCurrency = (value: number | null | undefined) => {
-    const num = value ?? 0;
-    return `Ksh.${num.toLocaleString()}`;
-  };
-
-  const formatNumber = (num: number | null | undefined) => {
-    const value = num ?? 0;
-    return value.toLocaleString();
-  };
+  const formatCurrency = (value: number) => `Ksh.${value.toLocaleString()}`;
+  const formatNumber = (num: number) => num.toLocaleString();
 
   const formatPercentage = (value: number | null | undefined) => {
-    const num = Number(value);
-    if (isNaN(num) || value === null || value === undefined) {
+    if (value === null || value === undefined || isNaN(Number(value))) {
       return "0.0%";
     }
-    return `${num.toFixed(1)}%`;
+    return `${Number(value).toFixed(1)}%`;
   };
 
   const getTimeRangeLabel = () => {
@@ -442,7 +444,7 @@ export default function AnalyticsPage() {
               {formatNumber(totalCustomers)}
             </div>
             <p className="text-xs text-gray-600">
-              {formatNumber(repeatCustomers)} repeat customers
+              {repeatCustomers} repeat customers
             </p>
           </CardContent>
         </Card>
@@ -469,9 +471,11 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatPercentage(womenPercentage)}
+              {formatPercentage(femalePercentage)}
             </div>
-            <p className="text-xs text-gray-600">of total customers</p>
+            <p className="text-xs text-gray-600">
+              {currentGenderData?.female_customers || 0} customers
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -488,21 +492,23 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={chartMonthlyData}>
+              <AreaChart data={monthlyTrends}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="month" />
-                <YAxis
-                  tickFormatter={(value) => `Ksh.${(value / 1000).toFixed(0)}K`}
-                />
+                <YAxis tickFormatter={(value) => `Ksh.${value / 1000}K`} />
                 <Tooltip
-                  formatter={(value: any, name: string) => {
-                    if (name === "revenue") {
+                  formatter={(value, name, props) => {
+                    // Use the dataKey from props to determine the series
+                    const dataKey = props.dataKey;
+                    if (dataKey === "revenue") {
                       return [
                         `Ksh.${Number(value).toLocaleString()}`,
                         "Revenue",
                       ];
+                    } else if (dataKey === "rentals") {
+                      return [`${Number(value).toLocaleString()}`, "Rentals"];
                     }
-                    return [Number(value).toLocaleString(), "Rentals"];
+                    return [value, name];
                   }}
                 />
                 <Legend />
@@ -561,20 +567,18 @@ export default function AnalyticsPage() {
                       )}
                     </div>
                     <div>
-                      <div className="font-medium text-sm">
-                        {station.name || "Unknown Station"}
-                      </div>
+                      <div className="font-medium text-sm">{station.name}</div>
                       <div className="text-xs text-gray-500">
-                        {station.location || "Location not available"}
+                        {station.location}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="font-bold text-sm">
-                      {formatCurrency(parseRevenue(station.revenue))}
+                      {formatCurrency(station.revenue)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {formatNumber(station.rentals)} rentals
+                      {station.rentals} rentals
                     </div>
                   </div>
                 </div>
@@ -599,11 +603,9 @@ export default function AnalyticsPage() {
               <BarChart data={stationRevenueData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
-                <YAxis
-                  tickFormatter={(value) => `Ksh.${(value / 1000).toFixed(0)}K`}
-                />
+                <YAxis tickFormatter={(value) => `Ksh.${value / 1000}K`} />
                 <Tooltip
-                  formatter={(value: any) => [
+                  formatter={(value) => [
                     `Ksh.${Number(value).toLocaleString()}`,
                     "Revenue",
                   ]}
@@ -630,10 +632,12 @@ export default function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
+                  // label={({ region, revenue }) =>
+                  //   `${region}: ${formatCurrency(revenue)}`
+                  // }
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="revenue"
-                  // label={(entry) => entry.region}
                 >
                   {regionalData.map((entry, index) => (
                     <Cell
@@ -643,7 +647,7 @@ export default function AnalyticsPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: any) => [
+                  formatter={(value) => [
                     `Ksh.${Number(value).toLocaleString()}`,
                     "Revenue",
                   ]}
@@ -661,7 +665,6 @@ export default function AnalyticsPage() {
           <CardTitle>Station Performance Details</CardTitle>
           <CardDescription>
             Comprehensive performance metrics for all stations
-            {stationComparison.length === 0 && " (Showing current period only)"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -672,57 +675,45 @@ export default function AnalyticsPage() {
                   <th className="text-left p-3">Station</th>
                   <th className="text-left p-3">Location</th>
                   <th className="text-left p-3">Region</th>
-                  <th className="text-right p-3">Revenue</th>
-                  <th className="text-right p-3">Rentals</th>
-                  <th className="text-right p-3">Customers</th>
-                  <th className="text-right p-3">Avg/Rental</th>
+                  <th className="text-right p-3">7D Revenue</th>
+                  <th className="text-right p-3">30D Revenue</th>
+                  <th className="text-right p-3">3M Revenue</th>
+                  <th className="text-right p-3">Total Rentals</th>
                   <th className="text-right p-3">Utilization</th>
                 </tr>
               </thead>
               <tbody>
-                {stationPerformance.slice(0, 10).map((station) => (
+                {stationComparison.slice(0, 10).map((station) => (
                   <tr
                     key={station.cabinet_id}
                     className="border-b hover:bg-gray-50"
                   >
-                    <td className="p-3 font-medium">
-                      {station.name || "Unknown"}
-                    </td>
+                    <td className="p-3 font-medium">{station.name}</td>
+                    <td className="p-3">{station.location}</td>
                     <td className="p-3">
-                      {station.location || "Not available"}
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="outline">
-                        {station.region || "Unknown"}
-                      </Badge>
+                      <Badge variant="outline">{station.region}</Badge>
                     </td>
                     <td className="p-3 text-right">
-                      {formatCurrency(parseRevenue(station.revenue))}
+                      {formatCurrency(station.revenue_7d)}
                     </td>
                     <td className="p-3 text-right">
-                      {formatNumber(station.rentals)}
+                      {formatCurrency(station.revenue_30d)}
                     </td>
                     <td className="p-3 text-right">
-                      {formatNumber(station.customers)}
+                      {formatCurrency(station.revenue_3m)}
                     </td>
-                    <td className="p-3 text-right">
-                      {formatCurrency(
-                        parseRevenue(station.avg_revenue_per_rental),
-                      )}
-                    </td>
+                    <td className="p-3 text-right">{station.rentals_total}</td>
                     <td className="p-3 text-right">
                       <Badge
                         variant={
-                          parsePercentage(station.utilization_rate) > 500
+                          station.current_utilization > 70
                             ? "default"
-                            : parsePercentage(station.utilization_rate) > 300
+                            : station.current_utilization > 40
                               ? "secondary"
                               : "outline"
                         }
                       >
-                        {formatPercentage(
-                          parsePercentage(station.utilization_rate),
-                        )}
+                        {formatPercentage(station.current_utilization)}
                       </Badge>
                     </td>
                   </tr>
@@ -732,6 +723,135 @@ export default function AnalyticsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Detailed Gender Analytics */}
+      {currentGenderData && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Demographics</CardTitle>
+            <CardDescription>
+              Detailed gender distribution analysis
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-6 border rounded-lg bg-pink-50">
+                <div className="text-3xl font-bold text-pink-600 mb-2">
+                  {formatPercentage(currentGenderData.female_percentage)}
+                </div>
+                <div className="text-sm font-medium text-gray-900">Women</div>
+                <div className="text-xs text-gray-600">
+                  {currentGenderData.female_customers.toLocaleString()}{" "}
+                  customers
+                </div>
+              </div>
+
+              <div className="text-center p-6 border rounded-lg bg-blue-50">
+                <div className="text-3xl font-bold text-blue-600 mb-2">
+                  {formatPercentage(currentGenderData.male_percentage)}
+                </div>
+                <div className="text-sm font-medium text-gray-900">Men</div>
+                <div className="text-xs text-gray-600">
+                  {currentGenderData.male_customers.toLocaleString()} customers
+                </div>
+              </div>
+
+              <div className="text-center p-6 border rounded-lg bg-gray-50">
+                <div className="text-3xl font-bold text-gray-600 mb-2">
+                  {formatPercentage(currentGenderData.other_percentage)}
+                </div>
+                <div className="text-sm font-medium text-gray-900">
+                  Other/Not Specified
+                </div>
+                <div className="text-xs text-gray-600">
+                  {currentGenderData.other_gender.toLocaleString()} customers
+                </div>
+              </div>
+            </div>
+
+            {/* Gender comparison over time */}
+            {genderData.length > 1 && (
+              <div className="mt-6">
+                <h4 className="text-sm font-medium mb-4">
+                  Gender Distribution Over Time
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left p-2">Period</th>
+                        <th className="text-left p-2">Total Customers</th>
+                        <th className="text-left p-2">Women</th>
+                        <th className="text-left p-2">Men</th>
+                        <th className="text-left p-2">Other</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {genderData.map((periodData, index) => (
+                        <tr key={index} className="border-b hover:bg-gray-50">
+                          <td className="p-2 font-medium">
+                            {periodData.period}
+                          </td>
+                          <td className="p-2">
+                            {periodData.total_customers.toLocaleString()}
+                          </td>
+                          <td className="p-2">
+                            {periodData.female_customers.toLocaleString()} (
+                            {formatPercentage(periodData.female_percentage)})
+                          </td>
+                          <td className="p-2">
+                            {periodData.male_customers.toLocaleString()} (
+                            {formatPercentage(periodData.male_percentage)})
+                          </td>
+                          <td className="p-2">
+                            {periodData.other_gender.toLocaleString()} (
+                            {formatPercentage(periodData.other_percentage)})
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Customer Loyalty */}
+      {customerAnalytics?.loyalty && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Loyalty Segments</CardTitle>
+            <CardDescription>
+              Distribution of customers by rental frequency
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {customerAnalytics.loyalty.map((segment: any, index: number) => (
+                <div
+                  key={segment.loyalty_segment}
+                  className="text-center p-4 border rounded-lg"
+                >
+                  <div
+                    className={`text-2xl font-bold mb-2`}
+                    style={{ color: COLORS[index % COLORS.length] }}
+                  >
+                    {segment.customer_count.toLocaleString()}
+                  </div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {segment.loyalty_segment}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    {segment.percentage}% of total
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
