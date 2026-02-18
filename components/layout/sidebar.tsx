@@ -59,20 +59,21 @@ const menuItems = [
       //   icon: PieChart,
       // },
       {
-        title: "Add Activation",
-        href: "/dashboard/activations/new",
-        icon: PlusCircle,
-      },
-      {
         title: "Activation Records",
         href: "/dashboard/activations/list",
         icon: List,
       },
       {
-        title: "Reports",
-        href: "/dashboard/activations/reports",
-        icon: FileText,
+        title: "Add Activation",
+        href: "/dashboard/activations/new",
+        icon: PlusCircle,
       },
+
+      // {
+      //   title: "Reports",
+      //   href: "/dashboard/activations/reports",
+      //   icon: FileText,
+      // },
     ],
   },
   {
