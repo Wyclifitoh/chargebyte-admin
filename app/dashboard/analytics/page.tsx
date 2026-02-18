@@ -1126,16 +1126,18 @@ export default function AnalyticsPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={genderData}
+                  data={genderData as any}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="revenue_percentage"
-                  label={(entry: GenderData) =>
-                    `${entry.gender || "Unknown"}: ${parseNumber(entry.revenue_percentage).toFixed(1)}%`
-                  }
+                  // label={(
+                  //   entry: any, // Use any for the entry
+                  // ) =>
+                  //   `${entry.gender || "Unknown"}: ${parseNumber(entry.revenue_percentage).toFixed(1)}%`
+                  // }
                 >
                   {genderData.map((entry, index) => (
                     <Cell
