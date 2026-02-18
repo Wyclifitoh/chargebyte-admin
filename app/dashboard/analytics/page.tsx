@@ -233,6 +233,8 @@ export default function AnalyticsPage() {
         },
       });
 
+      console.log("DASHBOARD KEYS:", dashboardData);
+
       setDashboardData(normalizeDashboard(dashboardResponse.data));
 
       setOrderStats(statsResponse.data);
