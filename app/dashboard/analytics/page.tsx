@@ -86,17 +86,21 @@ interface OrderStats {
 
 interface CustomerAnalytics {
   dashboard?: {
-    active_customers: {
-      overall: number;
-      last30Days: number;
+    total_customers: {
+      overall: string;
+      last30Days: string;
     };
     repeat_customers: {
-      overall: number;
-      last30Days: number;
+      overall: string;
+      last30Days: string;
     };
-    new_customers: {
+    women_percentage: {
+      overall: string;
+      last30Days: string;
+    };
+    new_customers_30d: {
       overall: number | null;
-      last30Days: number;
+      last30Days: string;
     };
   };
   totalCustomers?: Array<{
@@ -127,6 +131,11 @@ interface CustomerAnalytics {
     loyalty_segment: string;
     customer_count: number;
     percentage: string;
+  }>;
+  growth?: Array<{
+    registration_day: string;
+    new_customers: number;
+    cumulative_customers: string;
   }>;
 }
 
@@ -332,52 +341,50 @@ export default function AnalyticsPage() {
   // The data is in customerAnalytics.dashboard
   const dashboardMetrics = customerAnalytics?.dashboard;
 
-  const activeCustomersMetric = dashboardMetrics?.active_customers;
+  // Use the correct property names from your API
+  const activeCustomersMetric = dashboardMetrics?.total_customers;
   const repeatCustomersMetric = dashboardMetrics?.repeat_customers;
-  const newCustomersMetric = dashboardMetrics?.new_customers;
+  const newCustomersMetric = dashboardMetrics?.new_customers_30d;
+  const womenPercentageMetric = dashboardMetrics?.women_percentage;
 
   console.log("Dashboard Metrics:", dashboardMetrics);
-  console.log("Active Customers:", activeCustomersMetric);
+  console.log("Active Customers (total_customers):", activeCustomersMetric);
   console.log("Repeat Customers:", repeatCustomersMetric);
-  console.log("New Customers:", newCustomersMetric);
+  console.log("New Customers (new_customers_30d):", newCustomersMetric);
+  console.log("Women Percentage:", womenPercentageMetric);
 
-  // Calculate metrics from API data
+  // Calculate metrics from API data - parse string values to numbers
   const totalRevenue = orderStats?.totalRevenue || 0;
   const totalRentals = orderStats?.totalOrders || 0;
-  const totalCustomers = activeCustomersMetric?.last30Days || 0;
-  const repeatCustomers = repeatCustomersMetric?.last30Days || 0;
-  const newCustomers = newCustomersMetric?.last30Days || 0;
+  const totalCustomers = activeCustomersMetric
+    ? parseFloat(activeCustomersMetric.last30Days) || 0
+    : 0;
+  const repeatCustomers = repeatCustomersMetric
+    ? parseFloat(repeatCustomersMetric.last30Days) || 0
+    : 0;
+  const newCustomers = newCustomersMetric
+    ? parseFloat(newCustomersMetric.last30Days) || 0
+    : 0;
+  const womenPercentage = womenPercentageMetric
+    ? parseFloat(womenPercentageMetric.last30Days) || 0
+    : 0;
 
   console.log("Final values:", {
     totalCustomers,
     repeatCustomers,
     newCustomers,
+    womenPercentage,
   });
 
-  // Get women percentage from demographics if available
-  // First try to get from customerAnalytics.demographics
+  // Get female customers count from demographics
   const demographicsData = customerAnalytics?.demographics || [];
-  const genderFromAnalytics =
+  const currentGenderData =
     demographicsData.find((item) => item.period === "Last 30 Days") ||
-    demographicsData[0];
+    demographicsData[0] ||
+    genderData.find((item) => item.period === "Last 30 Days") ||
+    genderData[0];
 
-  const genderFromState =
-    genderData.find((item) => item.period === "Last 30 Days") || genderData[0];
-
-  // Use the one that exists
-  const currentGenderData = genderFromAnalytics || genderFromState;
-
-  // Parse string values to numbers for display
-  const femalePercentage = currentGenderData
-    ? parseFloat(currentGenderData.female_percentage || "0")
-    : 0;
-  const malePercentage = currentGenderData
-    ? parseFloat(currentGenderData.male_percentage || "0")
-    : 0;
-  const otherPercentage = currentGenderData
-    ? parseFloat(currentGenderData.other_percentage || "0")
-    : 0;
-
+  // Parse gender data
   const femaleCustomers = currentGenderData
     ? parseInt(currentGenderData.female_customers || "0")
     : 0;
@@ -386,6 +393,16 @@ export default function AnalyticsPage() {
     : 0;
   const otherCustomers = currentGenderData
     ? parseInt(currentGenderData.other_gender || "0")
+    : 0;
+
+  const femalePercent = currentGenderData
+    ? parseFloat(currentGenderData.female_percentage || "0")
+    : 0;
+  const malePercent = currentGenderData
+    ? parseFloat(currentGenderData.male_percentage || "0")
+    : 0;
+  const otherPercent = currentGenderData
+    ? parseFloat(currentGenderData.other_percentage || "0")
     : 0;
 
   // Prepare station performance data for charts
@@ -420,6 +437,14 @@ export default function AnalyticsPage() {
     revenue: parseRevenue(item.revenue),
     rentals: item.rentals,
   }));
+
+  // Prepare growth data for chart if available
+  const growthData =
+    customerAnalytics?.growth?.map((item) => ({
+      date: new Date(item.registration_day).toLocaleDateString(),
+      newCustomers: item.new_customers,
+      cumulative: parseInt(item.cumulative_customers),
+    })) || [];
 
   // Utility functions with null safety
   const formatCurrency = (value: number | null | undefined) => {
@@ -579,7 +604,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatPercentage(femalePercentage)}
+              {formatPercentage(womenPercentage)}
             </div>
             <p className="text-xs text-gray-600">
               {formatNumber(femaleCustomers)} customers
@@ -745,6 +770,7 @@ export default function AnalyticsPage() {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="revenue"
+                  // label={(entry) => entry.region}
                 >
                   {regionalData.map((entry, index) => (
                     <Cell
@@ -765,6 +791,44 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Customer Growth Chart */}
+      {growthData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Customer Growth</CardTitle>
+            <CardDescription>
+              New customer registrations over time
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={growthData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis yAxisId="left" />
+                <YAxis yAxisId="right" orientation="right" />
+                <Tooltip />
+                <Legend />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="newCustomers"
+                  stroke="#10b981"
+                  name="New Customers"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="cumulative"
+                  stroke="#3b82f6"
+                  name="Total Customers"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Detailed Station Performance Table */}
       <Card>
@@ -856,7 +920,7 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center p-6 border rounded-lg bg-pink-50">
                 <div className="text-3xl font-bold text-pink-600 mb-2">
-                  {formatPercentage(femalePercentage)}
+                  {formatPercentage(femalePercent)}
                 </div>
                 <div className="text-sm font-medium text-gray-900">Women</div>
                 <div className="text-xs text-gray-600">
@@ -866,7 +930,7 @@ export default function AnalyticsPage() {
 
               <div className="text-center p-6 border rounded-lg bg-blue-50">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  {formatPercentage(malePercentage)}
+                  {formatPercentage(malePercent)}
                 </div>
                 <div className="text-sm font-medium text-gray-900">Men</div>
                 <div className="text-xs text-gray-600">
@@ -876,7 +940,7 @@ export default function AnalyticsPage() {
 
               <div className="text-center p-6 border rounded-lg bg-gray-50">
                 <div className="text-3xl font-bold text-gray-600 mb-2">
-                  {formatPercentage(otherPercentage)}
+                  {formatPercentage(otherPercent)}
                 </div>
                 <div className="text-sm font-medium text-gray-900">
                   Other/Not Specified
