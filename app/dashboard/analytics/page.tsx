@@ -16,11 +16,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers/auth-provider";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -32,8 +31,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
-  Area,
-  AreaChart,
+  Line,
+  LineChart,
 } from "recharts";
 import {
   TrendingUp,
@@ -43,19 +42,11 @@ import {
   Download,
   RefreshCw,
   User,
-  MapPin,
-  Star,
+  Calendar,
+  Clock,
+  Award,
 } from "lucide-react";
-import {
-  getOrderStats,
-  getDashboardData,
-  getAllCustomerAnalytics,
-  getCustomerDemographics,
-  getMonthlyTrends,
-  getStationPerformance,
-  getStationPerformanceComparison,
-  getTopPerformingStations,
-} from "@/lib/api/order";
+import api from "@/lib/api";
 
 const COLORS = [
   "#40E0D0",
@@ -64,143 +55,108 @@ const COLORS = [
   "#f59e0b",
   "#ef4444",
   "#8b5cf6",
+  "#ec4899",
+  "#14b8a6",
 ];
 
-// Define proper interfaces based on actual API response
-interface ApiDashboardData {
-  total_customers?: { overall: number; last_30_days_value: number };
-  repeat_customers?: { overall: number; last_30_days_value: number };
-  women_percentage?: { overall: number; last_30_days_value: number };
-  new_customers?: { overall: number | null; last_30_days_value: number };
-}
-
-interface OrderStats {
-  totalOrders: number;
-  totalRevenue: number;
-  averageOrderValue: number;
-  uniqueCustomers: number;
-  ongoingOrders: number;
-  completedOrders: number;
-  cancelledOrders: number;
-}
-
-interface CustomerAnalytics {
-  dashboard?: {
-    total_customers: {
-      overall: string;
-      last30Days: string;
-    };
-    repeat_customers: {
-      overall: string;
-      last30Days: string;
-    };
-    women_percentage: {
-      overall: string;
-      last30Days: string;
-    };
-    new_customers_30d: {
-      overall: number | null;
-      last30Days: string;
-    };
-  };
-  totalCustomers?: Array<{
-    period: string;
-    total_customers: number;
-  }>;
-  repeatCustomers?: Array<{
-    period: string;
-    repeat_customers: number;
-  }>;
-  womenPercentage?: Array<{
-    period: string;
-    total_customers: number;
-    female_customers: string;
-    female_percentage: string;
-  }>;
-  demographics?: Array<{
-    period: string;
-    total_customers: number;
-    female_customers: string;
-    male_customers: string;
-    other_gender: string;
-    female_percentage: string;
-    male_percentage: string;
-    other_percentage: string;
-  }>;
-  loyalty?: Array<{
-    loyalty_segment: string;
-    customer_count: number;
-    percentage: string;
-  }>;
-  growth?: Array<{
-    registration_day: string;
-    new_customers: number;
-    cumulative_customers: string;
-  }>;
-}
-
-interface MonthlyTrend {
-  month_number: number;
-  month: string;
-  revenue: string;
-  rentals: number;
-}
-
-interface StationPerformance {
-  cabinet_id: string;
-  name: string;
-  location: string;
-  partner: string;
-  region: string;
-  status: string;
-  totalSlots: number;
-  availableSlots: number;
-  revenue: string;
-  rentals: number;
-  customers: number;
-  avg_revenue_per_rental: string;
-  utilization_rate: string;
-}
-
-interface TopStation {
-  cabinet_id: string;
-  name: string;
-  location: string;
-  region: string;
-  revenue: string;
-  rentals: number;
+// Interfaces
+interface DashboardStats {
   unique_customers: number;
-  avg_revenue_per_rental: string;
-  utilization_rate: string;
+  total_rentals: number;
+  total_revenue_kes: string | number;
+  total_revenue_usd: string | number;
+  avg_order_value: string | number;
+  total_minutes: string | number;
+  ongoing_orders: number;
+  completed_orders: number;
+  cancelled_orders: number;
 }
 
-interface GenderDemographic {
-  period: string;
-  total_customers: number;
-  female_customers: number;
-  male_customers: number;
-  other_gender: number;
-  female_percentage: number;
-  male_percentage: number;
-  other_percentage: number;
+interface MonthlyData {
+  month_key: string;
+  month_name: string;
+  total_rentals: number;
+  unique_customers: number;
+  revenue_kes: string | number;
+  revenue_usd: string | number;
+  total_minutes: string | number;
+  avg_order_value: string | number;
+  target_usd: number | null;
+}
+
+interface WeeklyData {
+  year: number;
+  week_number: number;
+  week_start: string;
+  week_end: string;
+  total_rentals: number;
+  unique_customers: number;
+  revenue_kes: string | number;
+  revenue_usd: string | number;
+  total_minutes: string | number;
+  week_display: string;
+}
+
+interface DailyData {
+  date: string;
+  day_name: string;
+  day_of_week: number;
+  total_rentals: number;
+  unique_customers: number;
+  revenue_kes: string | number;
+  revenue_usd: string | number;
+  total_minutes: string | number;
+  avg_order_value: string | number;
+  peak_hour: number;
+}
+
+interface HourlyData {
+  hour_of_day: number;
+  order_count: number;
+  avg_rental_minutes: string | number;
+  avg_amount: string | number;
+  total_revenue: string | number;
+  percentage: string | number;
+}
+
+interface BestDayData {
+  day_name: string;
+  total_rentals: number;
+  total_revenue_kes: string | number;
+  total_revenue_usd: string | number;
+  avg_order_value: string | number;
+  unique_customers: number;
+  revenue_rank: number;
+  volume_rank: number;
+}
+
+interface GenderData {
+  gender: string;
+  customer_count: number;
+  rental_count: number;
+  revenue_kes: string | number;
+  revenue_usd: string | number;
+  customer_percentage: string | number;
+  revenue_percentage: string | number;
 }
 
 export default function AnalyticsPage() {
   const { hasPermission } = useAuth();
-  const [timeRange, setTimeRange] = useState("30d");
-  const [dashboardData, setDashboardData] = useState<ApiDashboardData | null>(
+  const [timeRange, setTimeRange] = useState("last4months");
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [selectedWeek, setSelectedWeek] = useState("all");
+  const [viewMode, setViewMode] = useState("monthly");
+
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
     null,
   );
-  const [orderStats, setOrderStats] = useState<OrderStats | null>(null);
-  const [customerAnalytics, setCustomerAnalytics] =
-    useState<CustomerAnalytics | null>(null);
-  const [genderData, setGenderData] = useState<GenderDemographic[]>([]);
-  const [monthlyTrends, setMonthlyTrends] = useState<MonthlyTrend[]>([]);
-  const [stationPerformance, setStationPerformance] = useState<
-    StationPerformance[]
-  >([]);
-  const [stationComparison, setStationComparison] = useState<any[]>([]);
-  const [topStations, setTopStations] = useState<TopStation[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
+  const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
+  const [bestDaysData, setBestDaysData] = useState<BestDayData[]>([]);
+  const [genderData, setGenderData] = useState<GenderData[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -214,117 +170,197 @@ export default function AnalyticsPage() {
     );
   }
 
-  // Map timeRange to API date parameter
-  const getDateParam = () => {
-    switch (timeRange) {
-      case "7d":
-        return "last7days";
-      case "30d":
-        return "last30days";
-      case "3m":
-        return "last3months";
-      default:
-        return "last30days";
+  // Helper functions to parse string values from API
+  const parseNumber = (value: string | number | null | undefined): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "string") {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? 0 : parsed;
     }
+    return value;
   };
 
-  // Helper function to parse string revenue to number
-  const parseRevenue = (revenue: string | number): number => {
-    if (typeof revenue === "string") {
-      return parseFloat(revenue) || 0;
-    }
-    return revenue || 0;
+  const formatCurrency = (
+    value: string | number | null | undefined,
+  ): string => {
+    const num = parseNumber(value);
+    return `Ksh ${num.toLocaleString()}`;
   };
 
-  // Helper function to parse string percentage to number
-  const parsePercentage = (percentage: string | number): number => {
-    if (typeof percentage === "string") {
-      return parseFloat(percentage) || 0;
-    }
-    return percentage || 0;
+  const formatUSD = (value: string | number | null | undefined): string => {
+    const num = parseNumber(value);
+    return `$${num.toLocaleString()}`;
   };
 
-  // Fetch analytics data
+  const formatNumber = (value: string | number | null | undefined): string => {
+    const num = parseNumber(value);
+    return num.toLocaleString();
+  };
+
+  const formatPercentage = (
+    value: string | number | null | undefined,
+  ): string => {
+    const num = parseNumber(value);
+    return `${num.toFixed(1)}%`;
+  };
+
+  // Fetch all analytics data
+  // Fetch all analytics data
   const fetchAnalyticsData = async () => {
     try {
-      setRefreshing(true);
-      const dateParam = getDateParam();
+      setLoading(true);
+      // setError(null);
+
+      // Build query params
+      let params = new URLSearchParams();
+      params.append("dateRange", timeRange);
+
+      console.log("🔍 DEBUG - Fetching with params:", {
+        timeRange,
+        selectedMonth,
+        selectedWeek,
+        params: params.toString(),
+      });
 
       const [
-        dashboardResponse,
-        statsResponse,
-        analyticsResponse,
-        demographicsResponse,
-        monthlyTrendsResponse,
-        stationPerformanceResponse,
-        topStationsResponse,
+        statsRes,
+        monthlyRes,
+        weeklyRes,
+        dailyRes,
+        hourlyRes,
+        bestDaysRes,
+        genderRes,
       ] = await Promise.all([
-        getDashboardData(),
-        getOrderStats({ date: dateParam }),
-        getAllCustomerAnalytics(),
-        getCustomerDemographics(),
-        getMonthlyTrends(),
-        getStationPerformance(timeRange),
-        getTopPerformingStations(5, timeRange),
+        api.get(`/customer-analytics/dashboard-stats?${params}`),
+        api.get("/customer-analytics/revenue-by-month"),
+        api.get(`/customer-analytics/revenue-by-week?${params}`),
+        api.get(`/customer-analytics/revenue-by-day?${params}`),
+        api.get(
+          `/customer-analytics/hourly-distribution?dateRange=${timeRange}`,
+        ),
+        api.get("/customer-analytics/best-performing-days"),
+        api.get(
+          `/customer-analytics/gender-distribution?dateRange=${timeRange}`,
+        ),
       ]);
 
-      setDashboardData(dashboardResponse.data);
-      setOrderStats(statsResponse.data);
-      setCustomerAnalytics(analyticsResponse.data);
-      console.log("Customer Analytics Raw Data:", analyticsResponse.data);
+      // Log each response structure
+      console.log("📊 DEBUG - Stats Response:", {
+        status: statsRes.status,
+        data: statsRes.data,
+        hasData: !!statsRes.data,
+        dataType: typeof statsRes.data,
+        keys: Object.keys(statsRes.data || {}),
+      });
 
-      // Handle demographics response - it might be nested or direct
-      if (
-        demographicsResponse.data &&
-        Array.isArray(demographicsResponse.data)
-      ) {
-        setGenderData(demographicsResponse.data);
-      } else if (
-        demographicsResponse.data?.data &&
-        Array.isArray(demographicsResponse.data.data)
-      ) {
-        setGenderData(demographicsResponse.data.data);
+      console.log("📊 DEBUG - Monthly Response:", {
+        status: monthlyRes.status,
+        data: monthlyRes.data,
+        hasData: !!monthlyRes.data,
+        dataType: typeof monthlyRes.data,
+        keys: Object.keys(monthlyRes.data || {}),
+      });
+
+      console.log("📊 DEBUG - Weekly Response:", {
+        status: weeklyRes.status,
+        data: weeklyRes.data,
+        hasData: !!weeklyRes.data,
+        dataType: typeof weeklyRes.data,
+        keys: Object.keys(weeklyRes.data || {}),
+      });
+
+      console.log("📊 DEBUG - Daily Response:", {
+        status: dailyRes.status,
+        data: dailyRes.data,
+        hasData: !!dailyRes.data,
+        dataType: typeof dailyRes.data,
+        keys: Object.keys(dailyRes.data || {}),
+      });
+
+      console.log("📊 DEBUG - Hourly Response:", {
+        status: hourlyRes.status,
+        data: hourlyRes.data,
+        hasData: !!hourlyRes.data,
+        dataType: typeof hourlyRes.data,
+        keys: Object.keys(hourlyRes.data || {}),
+      });
+
+      console.log("📊 DEBUG - Best Days Response:", {
+        status: bestDaysRes.status,
+        data: bestDaysRes.data,
+        hasData: !!bestDaysRes.data,
+        dataType: typeof bestDaysRes.data,
+        keys: Object.keys(bestDaysRes.data || {}),
+      });
+
+      console.log("📊 DEBUG - Gender Response:", {
+        status: genderRes.status,
+        data: genderRes.data,
+        hasData: !!genderRes.data,
+        dataType: typeof genderRes.data,
+        keys: Object.keys(genderRes.data || {}),
+      });
+
+      // Check if data exists and set it
+      if (statsRes.data) {
+        // Check different possible paths
+        const statsData = statsRes.data.data || statsRes.data;
+        console.log("✅ DEBUG - Setting dashboard stats:", statsData);
+        setDashboardStats(statsData);
       } else {
-        setGenderData([]);
+        console.warn("⚠️ DEBUG - No dashboard stats data received");
       }
 
-      // Handle monthly trends - check if it's nested
-      if (monthlyTrendsResponse.data?.monthlyTrends) {
-        setMonthlyTrends(monthlyTrendsResponse.data.monthlyTrends);
-      } else if (Array.isArray(monthlyTrendsResponse.data)) {
-        setMonthlyTrends(monthlyTrendsResponse.data);
+      if (monthlyRes.data) {
+        const monthlyData = monthlyRes.data.data || monthlyRes.data;
+        console.log("✅ DEBUG - Setting monthly data:", monthlyData);
+        setMonthlyData(Array.isArray(monthlyData) ? monthlyData : []);
       } else {
-        setMonthlyTrends([]);
+        console.warn("⚠️ DEBUG - No monthly data received");
       }
 
-      setStationPerformance(stationPerformanceResponse.data || []);
-      setTopStations(topStationsResponse.data || []);
+      if (weeklyRes.data) {
+        const weeklyData = weeklyRes.data.data || weeklyRes.data;
+        console.log("✅ DEBUG - Setting weekly data:", weeklyData);
+        setWeeklyData(Array.isArray(weeklyData) ? weeklyData : []);
+      } else {
+        console.warn("⚠️ DEBUG - No weekly data received");
+      }
 
-      // Create station comparison data from station performance
-      if (stationPerformanceResponse.data) {
-        const comparisonData = stationPerformanceResponse.data.map(
-          (station: StationPerformance) => ({
-            cabinet_id: station.cabinet_id,
-            name: station.name,
-            location: station.location,
-            region: station.region,
-            revenue_7d: parseRevenue(station.revenue),
-            rentals_7d: station.rentals,
-            revenue_30d: parseRevenue(station.revenue),
-            rentals_30d: station.rentals,
-            revenue_3m: parseRevenue(station.revenue),
-            rentals_3m: station.rentals,
-            revenue_total: parseRevenue(station.revenue),
-            rentals_total: station.rentals,
-            totalSlots: station.totalSlots,
-            availableSlots: station.availableSlots,
-            current_utilization: parsePercentage(station.utilization_rate),
-          }),
-        );
-        setStationComparison(comparisonData);
+      if (dailyRes.data) {
+        const dailyData = dailyRes.data.data || dailyRes.data;
+        console.log("✅ DEBUG - Setting daily data:", dailyData);
+        setDailyData(Array.isArray(dailyData) ? dailyData : []);
+      } else {
+        console.warn("⚠️ DEBUG - No daily data received");
+      }
+
+      if (hourlyRes.data) {
+        const hourlyData = hourlyRes.data.data || hourlyRes.data;
+        console.log("✅ DEBUG - Setting hourly data:", hourlyData);
+        setHourlyData(Array.isArray(hourlyData) ? hourlyData : []);
+      } else {
+        console.warn("⚠️ DEBUG - No hourly data received");
+      }
+
+      if (bestDaysRes.data) {
+        const bestDaysData = bestDaysRes.data.data || bestDaysRes.data;
+        console.log("✅ DEBUG - Setting best days data:", bestDaysData);
+        setBestDaysData(Array.isArray(bestDaysData) ? bestDaysData : []);
+      } else {
+        console.warn("⚠️ DEBUG - No best days data received");
+      }
+
+      if (genderRes.data) {
+        const genderData = genderRes.data.data || genderRes.data;
+        console.log("✅ DEBUG - Setting gender data:", genderData);
+        setGenderData(Array.isArray(genderData) ? genderData : []);
+      } else {
+        console.warn("⚠️ DEBUG - No gender data received");
       }
     } catch (error) {
-      console.error("Error fetching analytics data:", error);
+      console.error("❌ DEBUG - Error fetching analytics data:", error);
+      // setError("Failed to load analytics data. Please try again.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -333,150 +369,25 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     fetchAnalyticsData();
-  }, [timeRange]);
+  }, [timeRange, selectedMonth, selectedWeek]);
 
-  // Extract customer metrics from the dashboard object
-  console.log("Customer Analytics:", customerAnalytics);
-
-  // The data is in customerAnalytics.dashboard
-  const dashboardMetrics = customerAnalytics?.dashboard;
-
-  // Use the correct property names from your API
-  const activeCustomersMetric = dashboardMetrics?.total_customers;
-  const repeatCustomersMetric = dashboardMetrics?.repeat_customers;
-  const newCustomersMetric = dashboardMetrics?.new_customers_30d;
-  const womenPercentageMetric = dashboardMetrics?.women_percentage;
-
-  console.log("Dashboard Metrics:", dashboardMetrics);
-  console.log("Active Customers (total_customers):", activeCustomersMetric);
-  console.log("Repeat Customers:", repeatCustomersMetric);
-  console.log("New Customers (new_customers_30d):", newCustomersMetric);
-  console.log("Women Percentage:", womenPercentageMetric);
-
-  // Calculate metrics from API data - parse string values to numbers
-  const totalRevenue = orderStats?.totalRevenue || 0;
-  const totalRentals = orderStats?.totalOrders || 0;
-  const totalCustomers = activeCustomersMetric
-    ? parseFloat(activeCustomersMetric.last30Days) || 0
-    : 0;
-  const repeatCustomers = repeatCustomersMetric
-    ? parseFloat(repeatCustomersMetric.last30Days) || 0
-    : 0;
-  const newCustomers = newCustomersMetric
-    ? parseFloat(newCustomersMetric.last30Days) || 0
-    : 0;
-  const womenPercentage = womenPercentageMetric
-    ? parseFloat(womenPercentageMetric.last30Days) || 0
-    : 0;
-
-  console.log("Final values:", {
-    totalCustomers,
-    repeatCustomers,
-    newCustomers,
-    womenPercentage,
-  });
-
-  // Get female customers count from demographics
-  const demographicsData = customerAnalytics?.demographics || [];
-  const currentGenderData =
-    demographicsData.find((item) => item.period === "Last 30 Days") ||
-    demographicsData[0] ||
-    genderData.find((item) => item.period === "Last 30 Days") ||
-    genderData[0];
-
-  // Parse gender data
-  const femaleCustomers = currentGenderData
-    ? parseInt(currentGenderData.female_customers || "0")
-    : 0;
-  const maleCustomers = currentGenderData
-    ? parseInt(currentGenderData.male_customers || "0")
-    : 0;
-  const otherCustomers = currentGenderData
-    ? parseInt(currentGenderData.other_gender || "0")
-    : 0;
-
-  const femalePercent = currentGenderData
-    ? parseFloat(currentGenderData.female_percentage || "0")
-    : 0;
-  const malePercent = currentGenderData
-    ? parseFloat(currentGenderData.male_percentage || "0")
-    : 0;
-  const otherPercent = currentGenderData
-    ? parseFloat(currentGenderData.other_percentage || "0")
-    : 0;
-
-  // Prepare station performance data for charts
-  const stationRevenueData = stationPerformance.slice(0, 8).map((station) => ({
-    name: station.name.split(" ")[0] || station.cabinet_id,
-    revenue: parseRevenue(station.revenue),
-    rentals: station.rentals || 0,
-    utilization: parsePercentage(station.utilization_rate),
+  // Get unique months for filter
+  const monthOptions = monthlyData.map((item) => ({
+    value: item.month_key,
+    label: item.month_name,
   }));
 
-  // Regional performance data from stations
-  const regionalData = stationPerformance.reduce<any[]>((acc, station) => {
-    const existingRegion = acc.find((r) => r.region === station.region);
-
-    if (existingRegion) {
-      existingRegion.revenue += parseRevenue(station.revenue);
-      existingRegion.rentals += station.rentals || 0;
-    } else {
-      acc.push({
-        region: station.region || "Unknown",
-        revenue: parseRevenue(station.revenue),
-        rentals: station.rentals || 0,
-      });
-    }
-
-    return acc;
-  }, []);
-
-  // Prepare monthly trends data for charts
-  const chartMonthlyData = monthlyTrends.map((item) => ({
-    month: item.month,
-    revenue: parseRevenue(item.revenue),
-    rentals: item.rentals,
-  }));
-
-  // Prepare growth data for chart if available
-  const growthData =
-    customerAnalytics?.growth?.map((item) => ({
-      date: new Date(item.registration_day).toLocaleDateString(),
-      newCustomers: item.new_customers,
-      cumulative: parseInt(item.cumulative_customers),
-    })) || [];
-
-  // Utility functions with null safety
-  const formatCurrency = (value: number | null | undefined) => {
-    const num = value ?? 0;
-    return `Ksh.${num.toLocaleString()}`;
-  };
-
-  const formatNumber = (num: number | null | undefined) => {
-    const value = num ?? 0;
-    return value.toLocaleString();
-  };
-
-  const formatPercentage = (value: number | null | undefined) => {
-    const num = Number(value);
-    if (isNaN(num) || value === null || value === undefined) {
-      return "0.0%";
-    }
-    return `${num.toFixed(1)}%`;
-  };
-
-  const getTimeRangeLabel = () => {
-    switch (timeRange) {
-      case "7d":
-        return "Last 7 days";
-      case "30d":
-        return "Last 30 days";
-      case "3m":
-        return "Last 3 months";
-      default:
-        return "Last 30 days";
-    }
-  };
+  // Get weeks for selected month
+  const weekOptions = weeklyData
+    .filter((week) => {
+      if (!selectedMonth || selectedMonth === "all") return true;
+      const weekYearMonth = `${week.year}-${String(week.week_number).padStart(2, "0")}`;
+      return weekYearMonth.startsWith(selectedMonth);
+    })
+    .map((week) => ({
+      value: week.week_number.toString(),
+      label: week.week_display,
+    }));
 
   const handleRefresh = () => {
     fetchAnalyticsData();
@@ -487,7 +398,7 @@ export default function AnalyticsPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading analytics data...</p>
+          <p className="text-gray-600">Loading analytics data...</p>
         </div>
       </div>
     );
@@ -495,26 +406,61 @@ export default function AnalyticsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+      {/* Header with filters */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
             Analytics Dashboard
           </h1>
           <p className="text-gray-600 mt-1">
-            Real-time business intelligence and performance metrics
+            Track performance by month, week, and day
           </p>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex flex-wrap gap-3">
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-40">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="3m">Last 3 months</SelectItem>
+              <SelectItem value="last7days">Last 7 days</SelectItem>
+              <SelectItem value="last30days">Last 30 days</SelectItem>
+              <SelectItem value="last3months">Last 3 months</SelectItem>
+              <SelectItem value="last4months">Last 4 months</SelectItem>
             </SelectContent>
           </Select>
+
+          {viewMode === "weekly" && (
+            <>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Months</SelectItem>
+                  {monthOptions.map((month) => (
+                    <SelectItem key={month.value} value={month.value}>
+                      {month.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedWeek} onValueChange={setSelectedWeek}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Select Week" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Weeks</SelectItem>
+                  {weekOptions.map((week) => (
+                    <SelectItem key={week.value} value={week.value}>
+                      {week.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </>
+          )}
+
           <Button
             variant="outline"
             onClick={handleRefresh}
@@ -532,509 +478,741 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      {/* Key Performance Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium opacity-90">
-              Total Revenue
-            </CardTitle>
-            <Banknote className="h-4 w-4 opacity-90" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalRevenue)}
-            </div>
-            <p className="text-xs opacity-90">{getTimeRangeLabel()}</p>
-          </CardContent>
-        </Card>
+      {/* View Mode Tabs */}
+      <Tabs value={viewMode} onValueChange={setViewMode} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="monthly" className="flex items-center">
+            <Calendar className="mr-2 h-4 w-4" />
+            Monthly View
+          </TabsTrigger>
+          <TabsTrigger value="weekly" className="flex items-center">
+            <Calendar className="mr-2 h-4 w-4" />
+            Weekly View
+          </TabsTrigger>
+          <TabsTrigger value="daily" className="flex items-center">
+            <Clock className="mr-2 h-4 w-4" />
+            Daily View
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Rentals</CardTitle>
-            <Battery className="h-4 w-4 text-emerald-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatNumber(totalRentals)}
-            </div>
-            <p className="text-xs text-gray-600">
-              {orderStats?.ongoingOrders || 0} ongoing •{" "}
-              {orderStats?.completedOrders || 0} completed
-            </p>
-          </CardContent>
-        </Card>
+        {/* Key Metrics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <Card className="bg-gradient-to-r from-primary-500 to-primary-600 text-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium opacity-90">
+                Total Revenue
+              </CardTitle>
+              <Banknote className="h-4 w-4 opacity-90" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(dashboardStats?.total_revenue_kes)}
+              </div>
+              <div className="text-xs opacity-90">
+                {formatUSD(dashboardStats?.total_revenue_usd)} USD
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Active Customers
-            </CardTitle>
-            <Users className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatNumber(totalCustomers)}
-            </div>
-            <p className="text-xs text-gray-600">
-              {formatNumber(repeatCustomers)} repeat customers
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Rentals
+              </CardTitle>
+              <Battery className="h-4 w-4 text-emerald-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatNumber(dashboardStats?.total_rentals)}
+              </div>
+              <p className="text-xs text-gray-600">
+                {dashboardStats?.ongoing_orders || 0} ongoing •{" "}
+                {dashboardStats?.completed_orders || 0} completed
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Customers</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatNumber(newCustomers)}
-            </div>
-            <p className="text-xs text-gray-600">Last 30 days</p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Unique Customers
+              </CardTitle>
+              <Users className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatNumber(dashboardStats?.unique_customers)}
+              </div>
+              <p className="text-xs text-gray-600">Active users</p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Women Customers
-            </CardTitle>
-            <User className="h-4 w-4 text-pink-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {formatPercentage(womenPercentage)}
-            </div>
-            <p className="text-xs text-gray-600">
-              {formatNumber(femaleCustomers)} customers
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Avg Order Value
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatCurrency(dashboardStats?.avg_order_value)}
+              </div>
+              <p className="text-xs text-gray-600">Per rental</p>
+            </CardContent>
+          </Card>
 
-      {/* Revenue and Station Performance */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Revenue Trend */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Monthly Revenue Trend 2025</CardTitle>
-            <CardDescription>
-              Revenue performance throughout the year
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total Minutes
+              </CardTitle>
+              <Clock className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {formatNumber(dashboardStats?.total_minutes)}
+              </div>
+              <p className="text-xs text-gray-600">
+                {Math.round(parseNumber(dashboardStats?.total_minutes) / 60)}{" "}
+                hours
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Monthly View */}
+        <TabsContent value="monthly" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Revenue & Rentals</CardTitle>
+              <CardDescription>
+                Performance by month (Nov 2025 - Feb 2026)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month_name" />
+                  <YAxis
+                    yAxisId="left"
+                    tickFormatter={(value) =>
+                      `Ksh ${(value / 1000).toFixed(0)}K`
+                    }
+                  />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip
+                    formatter={(value: any, name: string) => {
+                      if (name === "revenue_kes")
+                        return [
+                          `Ksh ${parseNumber(value).toLocaleString()}`,
+                          "Revenue",
+                        ];
+                      if (name === "revenue_usd")
+                        return [
+                          `$${parseNumber(value).toLocaleString()}`,
+                          "Revenue (USD)",
+                        ];
+                      if (name === "target_usd")
+                        return [
+                          `$${parseNumber(value).toLocaleString()}`,
+                          "Target (USD)",
+                        ];
+                      return [parseNumber(value).toLocaleString(), "Rentals"];
+                    }}
+                  />
+                  <Legend />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="revenue_kes"
+                    fill="#40E0D0"
+                    name="Revenue (KES)"
+                  />
+                  <Bar
+                    yAxisId="right"
+                    dataKey="total_rentals"
+                    fill="#3b82f6"
+                    name="Rentals"
+                  />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="target_usd"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    name="Target (USD)"
+                    dot={{ fill: "#ef4444" }}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Monthly Breakdown</CardTitle>
+              <CardDescription>
+                Detailed monthly performance metrics
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">Month</th>
+                      <th className="text-right p-3">Rentals</th>
+                      <th className="text-right p-3">Customers</th>
+                      <th className="text-right p-3">Revenue (KES)</th>
+                      <th className="text-right p-3">Revenue (USD)</th>
+                      {/* <th className="text-right p-3">Target (USD)</th> */}
+                      {/* <th className="text-right p-3">Variance</th> */}
+                      {/* <th className="text-right p-3">% of Target</th> */}
+                      <th className="text-right p-3">Avg Order</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {monthlyData.map((month) => {
+                      const revenue_usd = parseNumber(month.revenue_usd);
+                      const target_usd = month.target_usd || 0;
+                      const variance = revenue_usd - target_usd;
+                      const percentOfTarget = target_usd
+                        ? ((revenue_usd / target_usd) * 100).toFixed(1)
+                        : "N/A";
+
+                      return (
+                        <tr
+                          key={month.month_key}
+                          className="border-b hover:bg-gray-50"
+                        >
+                          <td className="p-3 font-medium">
+                            {month.month_name}
+                          </td>
+                          <td className="p-3 text-right">
+                            {formatNumber(month.total_rentals)}
+                          </td>
+                          <td className="p-3 text-right">
+                            {formatNumber(month.unique_customers)}
+                          </td>
+                          <td className="p-3 text-right">
+                            {formatCurrency(month.revenue_kes)}
+                          </td>
+                          <td className="p-3 text-right">
+                            {formatUSD(month.revenue_usd)}
+                          </td>
+                          {/* <td className="p-3 text-right">
+                            {formatUSD(month.target_usd)}
+                          </td> */}
+                          {/* <td className="p-3 text-right">
+                            <span
+                              className={
+                                variance >= 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }
+                            >
+                              {variance >= 0 ? "+" : ""}
+                              {formatUSD(variance)}
+                            </span>
+                          </td> */}
+                          {/* <td className="p-3 text-right">
+                            <Badge
+                              variant={
+                                parseFloat(percentOfTarget) >= 100
+                                  ? "default"
+                                  : "destructive"
+                              }
+                            >
+                              {percentOfTarget}%
+                            </Badge>
+                          </td> */}
+                          <td className="p-3 text-right">
+                            {formatCurrency(month.avg_order_value)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Weekly View */}
+        <TabsContent value="weekly" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekly Performance</CardTitle>
+              <CardDescription>Revenue and rentals by week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={weeklyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="week_display"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                  />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip
+                    formatter={(value: any, name: string) => {
+                      if (name === "revenue_usd")
+                        return [
+                          `$${parseNumber(value).toLocaleString()}`,
+                          "Revenue",
+                        ];
+                      if (name === "total_rentals")
+                        return [parseNumber(value).toLocaleString(), "Rentals"];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="revenue_usd"
+                    stroke="#40E0D0"
+                    name="Revenue (USD)"
+                    strokeWidth={2}
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="total_rentals"
+                    stroke="#3b82f6"
+                    name="Rentals"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Weekly Breakdown</CardTitle>
+              <CardDescription>Performance metrics by week</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">Week</th>
+                      <th className="text-right p-3">Rentals</th>
+                      <th className="text-right p-3">Customers</th>
+                      <th className="text-right p-3">Revenue (KES)</th>
+                      <th className="text-right p-3">Revenue (USD)</th>
+                      <th className="text-right p-3">Minutes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {weeklyData.map((week) => (
+                      <tr
+                        key={`${week.year}-${week.week_number}`}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <td className="p-3 font-medium">{week.week_display}</td>
+                        <td className="p-3 text-right">
+                          {formatNumber(week.total_rentals)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatNumber(week.unique_customers)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatCurrency(week.revenue_kes)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatUSD(week.revenue_usd)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatNumber(week.total_minutes)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Daily View */}
+        <TabsContent value="daily" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Daily Performance</CardTitle>
+              <CardDescription>Revenue and rentals by day</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={400}>
+                <BarChart data={dailyData.slice(0, 30)}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis
+                    dataKey="date"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    tickFormatter={(date) =>
+                      new Date(date).toLocaleDateString()
+                    }
+                  />
+                  <YAxis yAxisId="left" />
+                  <YAxis yAxisId="right" orientation="right" />
+                  <Tooltip
+                    formatter={(value: any, name: string) => {
+                      if (name === "revenue_usd")
+                        return [
+                          `$${parseNumber(value).toLocaleString()}`,
+                          "Revenue",
+                        ];
+                      if (name === "total_rentals")
+                        return [parseNumber(value).toLocaleString(), "Rentals"];
+                      return [value, name];
+                    }}
+                    labelFormatter={(label) =>
+                      new Date(label).toLocaleDateString()
+                    }
+                  />
+                  <Legend />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="revenue_usd"
+                    fill="#40E0D0"
+                    name="Revenue (USD)"
+                  />
+                  <Bar
+                    yAxisId="right"
+                    dataKey="total_rentals"
+                    fill="#3b82f6"
+                    name="Rentals"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Best Performing Days of Week</CardTitle>
+              <CardDescription>Average performance by day</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-sm font-medium mb-4">By Revenue</h3>
+                  <div className="space-y-3">
+                    {bestDaysData
+                      .sort(
+                        (a, b) =>
+                          parseNumber(b.total_revenue_usd) -
+                          parseNumber(a.total_revenue_usd),
+                      )
+                      .slice(0, 3)
+                      .map((day, index) => (
+                        <div
+                          key={day.day_name}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Award
+                              className={`h-5 w-5 ${
+                                index === 0
+                                  ? "text-yellow-500"
+                                  : index === 1
+                                    ? "text-gray-400"
+                                    : "text-orange-400"
+                              }`}
+                            />
+                            <span className="font-medium">{day.day_name}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold">
+                              {formatUSD(day.total_revenue_usd)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatNumber(day.total_rentals)} rentals
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium mb-4">By Volume</h3>
+                  <div className="space-y-3">
+                    {bestDaysData
+                      .sort((a, b) => b.total_rentals - a.total_rentals)
+                      .slice(0, 3)
+                      .map((day, index) => (
+                        <div
+                          key={day.day_name}
+                          className="flex items-center justify-between p-3 border rounded-lg"
+                        >
+                          <div className="flex items-center space-x-3">
+                            <Award
+                              className={`h-5 w-5 ${
+                                index === 0
+                                  ? "text-yellow-500"
+                                  : index === 1
+                                    ? "text-gray-400"
+                                    : "text-orange-400"
+                              }`}
+                            />
+                            <span className="font-medium">{day.day_name}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-bold">
+                              {formatNumber(day.total_rentals)} rentals
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatUSD(day.total_revenue_usd)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Daily Breakdown</CardTitle>
+              <CardDescription>Performance metrics by day</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b">
+                      <th className="text-left p-3">Date</th>
+                      <th className="text-left p-3">Day</th>
+                      <th className="text-right p-3">Rentals</th>
+                      <th className="text-right p-3">Customers</th>
+                      <th className="text-right p-3">Revenue (KES)</th>
+                      <th className="text-right p-3">Revenue (USD)</th>
+                      <th className="text-right p-3">Avg Order</th>
+                      <th className="text-right p-3">Minutes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dailyData.map((day) => (
+                      <tr key={day.date} className="border-b hover:bg-gray-50">
+                        <td className="p-3 font-medium">
+                          {new Date(day.date).toLocaleDateString()}
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="outline">{day.day_name}</Badge>
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatNumber(day.total_rentals)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatNumber(day.unique_customers)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatCurrency(day.revenue_kes)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatUSD(day.revenue_usd)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatCurrency(day.avg_order_value)}
+                        </td>
+                        <td className="p-3 text-right">
+                          {formatNumber(day.total_minutes)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Hourly Distribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Hourly Distribution</CardTitle>
+          <CardDescription>When do customers rent most?</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={chartMonthlyData}>
+              <BarChart data={hourlyData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis
-                  tickFormatter={(value) => `Ksh.${(value / 1000).toFixed(0)}K`}
+                <XAxis
+                  dataKey="hour_of_day"
+                  tickFormatter={(hour) => `${hour}:00`}
                 />
+                <YAxis yAxisId="left" />
                 <Tooltip
                   formatter={(value: any, name: string) => {
-                    if (name === "revenue") {
-                      return [
-                        `Ksh.${Number(value).toLocaleString()}`,
-                        "Revenue",
-                      ];
-                    }
-                    return [Number(value).toLocaleString(), "Rentals"];
+                    if (name === "order_count")
+                      return [parseNumber(value).toLocaleString(), "Orders"];
+                    if (name === "avg_amount")
+                      return [formatCurrency(value), "Avg Amount"];
+                    return [value, name];
                   }}
                 />
                 <Legend />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#40E0D0"
+                <Bar
+                  yAxisId="left"
+                  dataKey="order_count"
                   fill="#40E0D0"
-                  fillOpacity={0.3}
-                  name="Revenue"
+                  name="Orders"
                 />
-                <Line
-                  type="monotone"
-                  dataKey="rentals"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  name="Rentals"
-                  dot={{ fill: "#3b82f6" }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Top Performing Stations */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Performing Stations</CardTitle>
-            <CardDescription>
-              Highest revenue generators {getTimeRangeLabel().toLowerCase()}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {topStations.slice(0, 5).map((station, index) => (
-                <div
-                  key={station.cabinet_id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        index === 0
-                          ? "bg-yellow-100 text-yellow-600"
-                          : index === 1
-                            ? "bg-gray-100 text-gray-600"
-                            : index === 2
-                              ? "bg-orange-100 text-orange-600"
-                              : "bg-blue-100 text-blue-600"
-                      }`}
-                    >
-                      {index < 3 ? (
-                        <Star className="h-4 w-4 fill-current" />
-                      ) : (
-                        <MapPin className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="font-medium text-sm">
-                        {station.name || "Unknown Station"}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {station.location || "Location not available"}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-sm">
-                      {formatCurrency(parseRevenue(station.revenue))}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatNumber(station.rentals)} rentals
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Station Performance Analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Station Revenue Comparison */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Station Revenue Performance</CardTitle>
-            <CardDescription>
-              Revenue distribution across top stations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={stationRevenueData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis
-                  tickFormatter={(value) => `Ksh.${(value / 1000).toFixed(0)}K`}
-                />
-                <Tooltip
-                  formatter={(value: any) => [
-                    `Ksh.${Number(value).toLocaleString()}`,
-                    "Revenue",
-                  ]}
-                />
-                <Legend />
-                <Bar dataKey="revenue" fill="#40E0D0" name="Revenue" />
-                <Bar dataKey="rentals" fill="#3b82f6" name="Rentals" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Regional Performance */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Regional Performance</CardTitle>
-            <CardDescription>Revenue distribution by region</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={regionalData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="revenue"
-                  // label={(entry) => entry.region}
-                >
-                  {regionalData.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={COLORS[index % COLORS.length]}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: any) => [
-                    `Ksh.${Number(value).toLocaleString()}`,
-                    "Revenue",
-                  ]}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Customer Growth Chart */}
-      {growthData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Growth</CardTitle>
-            <CardDescription>
-              New customer registrations over time
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={growthData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip />
-                <Legend />
                 <Line
                   yAxisId="left"
                   type="monotone"
-                  dataKey="newCustomers"
-                  stroke="#10b981"
-                  name="New Customers"
+                  dataKey="avg_amount"
+                  stroke="#ef4444"
+                  name="Avg Amount"
+                  strokeWidth={2}
                 />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="cumulative"
-                  stroke="#3b82f6"
-                  name="Total Customers"
-                />
-              </LineChart>
+              </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      )}
 
-      {/* Detailed Station Performance Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Station Performance Details</CardTitle>
-          <CardDescription>
-            Comprehensive performance metrics for all stations
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-3">Station</th>
-                  <th className="text-left p-3">Location</th>
-                  <th className="text-left p-3">Region</th>
-                  <th className="text-right p-3">Revenue</th>
-                  <th className="text-right p-3">Rentals</th>
-                  <th className="text-right p-3">Customers</th>
-                  <th className="text-right p-3">Avg/Rental</th>
-                  <th className="text-right p-3">Utilization</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stationPerformance.slice(0, 10).map((station) => (
-                  <tr
-                    key={station.cabinet_id}
-                    className="border-b hover:bg-gray-50"
+            <div className="space-y-4">
+              <h3 className="text-sm font-medium">Peak Hours</h3>
+              {[...hourlyData] // Create a copy using spread operator
+                .sort((a, b) => b.order_count - a.order_count)
+                .slice(0, 5)
+                .map((hour) => (
+                  <div
+                    key={hour.hour_of_day}
+                    className="flex items-center justify-between p-3 border rounded-lg"
                   >
-                    <td className="p-3 font-medium">
-                      {station.name || "Unknown"}
-                    </td>
-                    <td className="p-3">
-                      {station.location || "Not available"}
-                    </td>
-                    <td className="p-3">
-                      <Badge variant="outline">
-                        {station.region || "Unknown"}
-                      </Badge>
-                    </td>
-                    <td className="p-3 text-right">
-                      {formatCurrency(parseRevenue(station.revenue))}
-                    </td>
-                    <td className="p-3 text-right">
-                      {formatNumber(station.rentals)}
-                    </td>
-                    <td className="p-3 text-right">
-                      {formatNumber(station.customers)}
-                    </td>
-                    <td className="p-3 text-right">
-                      {formatCurrency(
-                        parseRevenue(station.avg_revenue_per_rental),
-                      )}
-                    </td>
-                    <td className="p-3 text-right">
-                      <Badge
-                        variant={
-                          parsePercentage(station.utilization_rate) > 500
-                            ? "default"
-                            : parsePercentage(station.utilization_rate) > 300
-                              ? "secondary"
-                              : "outline"
-                        }
-                      >
-                        {formatPercentage(
-                          parsePercentage(station.utilization_rate),
-                        )}
-                      </Badge>
-                    </td>
-                  </tr>
+                    <div className="flex items-center space-x-3">
+                      <Clock className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">
+                        {hour.hour_of_day}:00 - {hour.hour_of_day + 1}:00
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold">
+                        {formatNumber(hour.order_count)} orders
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {formatPercentage(hour.percentage)} of daily
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Detailed Gender Analytics */}
-      {currentGenderData && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Demographics</CardTitle>
-            <CardDescription>
-              Detailed gender distribution analysis
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-6 border rounded-lg bg-pink-50">
-                <div className="text-3xl font-bold text-pink-600 mb-2">
-                  {formatPercentage(femalePercent)}
-                </div>
-                <div className="text-sm font-medium text-gray-900">Women</div>
-                <div className="text-xs text-gray-600">
-                  {formatNumber(femaleCustomers)} customers
-                </div>
-              </div>
-
-              <div className="text-center p-6 border rounded-lg bg-blue-50">
-                <div className="text-3xl font-bold text-blue-600 mb-2">
-                  {formatPercentage(malePercent)}
-                </div>
-                <div className="text-sm font-medium text-gray-900">Men</div>
-                <div className="text-xs text-gray-600">
-                  {formatNumber(maleCustomers)} customers
-                </div>
-              </div>
-
-              <div className="text-center p-6 border rounded-lg bg-gray-50">
-                <div className="text-3xl font-bold text-gray-600 mb-2">
-                  {formatPercentage(otherPercent)}
-                </div>
-                <div className="text-sm font-medium text-gray-900">
-                  Other/Not Specified
-                </div>
-                <div className="text-xs text-gray-600">
-                  {formatNumber(otherCustomers)} customers
-                </div>
-              </div>
-            </div>
-
-            {/* Gender comparison over time */}
-            {genderData.length > 1 && (
-              <div className="mt-6">
-                <h4 className="text-sm font-medium mb-4">
-                  Gender Distribution Over Time
-                </h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Period</th>
-                        <th className="text-left p-2">Total Customers</th>
-                        <th className="text-left p-2">Women</th>
-                        <th className="text-left p-2">Men</th>
-                        <th className="text-left p-2">Other</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {genderData.map((periodData, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-50">
-                          <td className="p-2 font-medium">
-                            {periodData.period}
-                          </td>
-                          <td className="p-2">
-                            {formatNumber(periodData.total_customers)}
-                          </td>
-                          <td className="p-2">
-                            {formatNumber(periodData.female_customers)} (
-                            {formatPercentage(periodData.female_percentage)})
-                          </td>
-                          <td className="p-2">
-                            {formatNumber(periodData.male_customers)} (
-                            {formatPercentage(periodData.male_percentage)})
-                          </td>
-                          <td className="p-2">
-                            {formatNumber(periodData.other_gender || 0)} (
-                            {formatPercentage(periodData.other_percentage || 0)}
-                            )
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Customer Loyalty */}
-      {customerAnalytics?.loyalty && customerAnalytics.loyalty.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer Loyalty Segments</CardTitle>
-            <CardDescription>
-              Distribution of customers by rental frequency
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {customerAnalytics.loyalty.map((segment: any, index: number) => (
-                <div
-                  key={segment.loyalty_segment || `segment-${index}`}
-                  className="text-center p-4 border rounded-lg"
+      {/* Gender Distribution */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Gender Distribution</CardTitle>
+          <CardDescription>Customer breakdown by gender</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={genderData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="revenue_percentage"
+                  label={(entry: GenderData) =>
+                    `${entry.gender || "Unknown"}: ${parseNumber(entry.revenue_percentage).toFixed(1)}%`
+                  }
                 >
-                  <div
-                    className={`text-2xl font-bold mb-2`}
-                    style={{ color: COLORS[index % COLORS.length] }}
-                  >
-                    {formatNumber(segment.customer_count)}
+                  {genderData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={
+                        entry.gender === "Female"
+                          ? "#ec4899"
+                          : entry.gender === "Male"
+                            ? "#3b82f6"
+                            : "#9ca3af"
+                      }
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  formatter={(value: any, name: string, props: any) => {
+                    if (name === "revenue_percentage")
+                      return [`${parseNumber(value).toFixed(1)}%`, "Revenue %"];
+                    return [value, name];
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+
+            <div className="space-y-4">
+              {genderData.map((gender) => (
+                <div
+                  key={gender.gender || "unknown"}
+                  className="p-4 border rounded-lg"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <User
+                        className={`h-5 w-5 ${
+                          gender.gender === "Female"
+                            ? "text-pink-500"
+                            : gender.gender === "Male"
+                              ? "text-blue-500"
+                              : "text-gray-500"
+                        }`}
+                      />
+                      <span className="font-medium">
+                        {gender.gender || "Unknown"}
+                      </span>
+                    </div>
+                    <Badge variant="outline">
+                      {formatNumber(gender.customer_count)} customers
+                    </Badge>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {segment.loyalty_segment || "Unknown"}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {formatPercentage(segment.percentage)} of total
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <div className="text-xs text-gray-500">Revenue Share</div>
+                      <div className="font-bold">
+                        {formatPercentage(gender.revenue_percentage)}
+                      </div>
+                      <div className="text-xs">
+                        {formatUSD(gender.revenue_usd)}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500">
+                        Customer Share
+                      </div>
+                      <div className="font-bold">
+                        {formatPercentage(gender.customer_percentage)}
+                      </div>
+                      <div className="text-xs">
+                        {formatNumber(gender.rental_count)} rentals
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
