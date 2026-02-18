@@ -29,18 +29,6 @@ const menuItems = [
     roles: ["super_admin", "location_partner"],
   },
   {
-    title: "Rentals",
-    href: "/dashboard/rentals",
-    icon: Battery,
-    roles: ["super_admin", "staff", "location_partner"],
-  },
-  {
-    title: "Events",
-    href: "/dashboard/events",
-    icon: Megaphone,
-    roles: ["super_admin", "staff", "ad_client"],
-  },
-  {
     title: "Analytics",
     href: "/dashboard/analytics",
     icon: BarChart3,
@@ -77,6 +65,12 @@ const menuItems = [
     ],
   },
   {
+    title: "Events",
+    href: "/dashboard/events",
+    icon: Megaphone,
+    roles: ["super_admin", "staff", "ad_client"],
+  },
+  {
     title: "Stations",
     href: "/dashboard/admin/stations",
     icon: Building2,
@@ -86,26 +80,34 @@ const menuItems = [
     title: "Powerbanks",
     href: "/dashboard/admin/powerbanks",
     icon: Battery,
-    roles: ["super_admin", "staff"],
+    roles: ["super_admin"],
   },
   {
     title: "Users",
     href: "/dashboard/admin/users",
     icon: Users,
-    roles: ["super_admin", "staff"],
+    roles: ["super_admin"],
   },
-  {
-    title: "System Logs",
-    href: "/dashboard/admin/logs",
-    icon: Activity,
-    roles: ["super_admin", "staff"],
-  },
-  {
-    title: "Settings",
-    href: "/dashboard/settings",
-    icon: Settings,
-    roles: ["super_admin", "staff", "location_partner", "ad_client"],
-  },
+
+  // {
+  //   title: "Rentals",
+  //   href: "/dashboard/rentals",
+  //   icon: Battery,
+  //   roles: ["super_admin", "staff", "location_partner"],
+  // },
+
+  // {
+  //   title: "System Logs",
+  //   href: "/dashboard/admin/logs",
+  //   icon: Activity,
+  //   roles: ["super_admin", "staff"],
+  // },
+  // {
+  //   title: "Settings",
+  //   href: "/dashboard/settings",
+  //   icon: Settings,
+  //   roles: ["super_admin", "staff", "location_partner", "ad_client"],
+  // },
 ];
 
 import { useState } from "react";

@@ -278,13 +278,13 @@ export default function AdminDashboardPage() {
             Refresh
           </Button>
           <Link href="/dashboard/admin/stations">
-            <Button variant="outline">
+            <Button className="hidden" variant="outline">
               <Building2 className="mr-2 h-4 w-4" />
               Manage Stations
             </Button>
           </Link>
           <Link href="/dashboard/admin/users">
-            <Button className="bg-primary-500 hover:bg-primary-600">
+            <Button className="bg-primary-500 hover:bg-primary-600 hidden">
               <Users className="mr-2 h-4 w-4" />
               Manage Users
             </Button>
@@ -396,6 +396,72 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>Recent System Activity</CardTitle>
+            <CardDescription>
+              Latest system events and alerts from today
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {/* You can replace this with real log data from API */}
+              <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-2 h-2 rounded-full mt-2 bg-blue-500"></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900">
+                      System Startup
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className="border-blue-500 text-blue-700"
+                    >
+                      info
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-600 truncate">
+                    Powerbank rental system started for daily operations
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {today.toLocaleString()} • System
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                <div className="w-2 h-2 rounded-full mt-2 bg-yellow-500"></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-gray-900">
+                      High Usage Alert
+                    </p>
+                    <Badge
+                      variant="outline"
+                      className="border-yellow-500 text-yellow-700"
+                    >
+                      warning
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-gray-600 truncate">
+                    Station ST032 reached 80% capacity utilization
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {today.toLocaleString()} • System
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4">
+              <Link href="#">
+                <Button variant="outline" className="w-full">
+                  View All Today's Logs
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hidden">
+          <CardHeader>
             <CardTitle>Today's Activity</CardTitle>
             <CardDescription>
               Rental patterns throughout the day
@@ -422,8 +488,8 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Quick Actions and Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+        <Card className="hidden">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
             <CardDescription>Common administrative tasks</CardDescription>

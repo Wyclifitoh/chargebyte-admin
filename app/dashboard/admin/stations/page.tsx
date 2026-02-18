@@ -295,7 +295,7 @@ export default function StationsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Station Number</TableHead>
-                <TableHead>Name</TableHead>
+                <TableHead>Machine ID</TableHead>
                 {/* <TableHead>Location</TableHead> */}
                 {/* <TableHead>Partner</TableHead> */}
                 <TableHead>Region</TableHead>
