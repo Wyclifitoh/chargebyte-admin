@@ -214,7 +214,27 @@ export default function AnalyticsPage() {
         getTopPerformingStations(5, timeRange),
       ]);
 
-      setDashboardData(dashboardResponse.data);
+      const normalizeDashboard = (data: any) => ({
+        total_customers: {
+          overall: data.total_customers?.overall ?? 0,
+          last30Days: data.total_customers?.last_30_days_value ?? 0,
+        },
+        repeat_customers: {
+          overall: data.repeat_customers?.overall ?? 0,
+          last30Days: data.repeat_customers?.last_30_days_value ?? 0,
+        },
+        women_percentage: {
+          overall: data.women_percentage?.overall ?? 0,
+          last30Days: data.women_percentage?.last_30_days_value ?? 0,
+        },
+        new_customers_30d: {
+          overall: data.new_customers_30d?.overall ?? null,
+          last30Days: data.new_customers_30d?.last_30_days_value ?? 0,
+        },
+      });
+
+      setDashboardData(normalizeDashboard(dashboardResponse.data));
+
       setOrderStats(statsResponse.data);
       setCustomerAnalytics(analyticsResponse.data);
       setGenderData(demographicsResponse.data || []);
