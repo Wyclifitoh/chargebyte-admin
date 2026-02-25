@@ -19,33 +19,51 @@ import {
   List,
   FileText,
   ChevronDown,
+  Shield,
+  DollarSign,
+  Heart,
+  Eye,
+  TrendingUp,
 } from "lucide-react";
+
+const getRoleDashboard = (role: string) => {
+  const dashboards: Record<string, string> = {
+    super_admin: '/dashboard/super-admin',
+    admin: '/dashboard/admin',
+    staff: '/dashboard/staff',
+    location_partner: '/dashboard/location-partner',
+    ad_client: '/dashboard/advertising-partner',
+    sponsor: '/dashboard/sponsor',
+  };
+  return dashboards[role] || '/dashboard';
+};
 
 const menuItems = [
   {
     title: "Dashboard",
-    href: "/dashboard/admin",
+    href: "#dashboard",
     icon: Zap,
-    roles: ["super_admin", "location_partner"],
+    roles: ["super_admin", "admin", "staff", "location_partner", "ad_client", "sponsor"],
+    dynamic: true,
+  },
+  {
+    title: "System Config",
+    href: "/dashboard/super-admin",
+    icon: Shield,
+    roles: ["super_admin"],
   },
   {
     title: "Analytics",
     href: "/dashboard/analytics",
     icon: BarChart3,
-    roles: ["super_admin", "staff"],
+    roles: ["super_admin", "admin", "staff"],
   },
-  // Activations Section (Collapsible group)
   {
     title: "Activations",
     href: "/activations",
     icon: MapPin,
-    roles: ["super_admin", "staff"],
+    roles: ["super_admin", "admin", "staff"],
     items: [
-      // {
-      //   title: "Dashboard",
-      //   href: "/dashboard/activations",
-      //   icon: PieChart,
-      // },
       {
         title: "Activation Records",
         href: "/dashboard/activations/list",
@@ -56,58 +74,80 @@ const menuItems = [
         href: "/dashboard/activations/new",
         icon: PlusCircle,
       },
-
-      // {
-      //   title: "Reports",
-      //   href: "/dashboard/activations/reports",
-      //   icon: FileText,
-      // },
     ],
   },
   {
-    title: "Events",
-    href: "/dashboard/events",
-    icon: Megaphone,
-    roles: ["super_admin", "staff", "ad_client"],
+    title: "Rentals",
+    href: "/dashboard/rentals",
+    icon: Battery,
+    roles: ["super_admin", "admin", "staff"],
   },
   {
     title: "Stations",
     href: "/dashboard/admin/stations",
     icon: Building2,
-    roles: ["super_admin", "staff"],
+    roles: ["super_admin", "admin"],
+  },
+  {
+    title: "My Stations",
+    href: "/dashboard/location-partner",
+    icon: MapPin,
+    roles: ["location_partner"],
+  },
+  {
+    title: "Revenue Share",
+    href: "/dashboard/location-partner",
+    icon: DollarSign,
+    roles: ["location_partner"],
+  },
+  {
+    title: "Ad Campaigns",
+    href: "/dashboard/advertising-partner",
+    icon: Eye,
+    roles: ["ad_client"],
+  },
+  {
+    title: "Campaign Analytics",
+    href: "/dashboard/advertising-partner",
+    icon: TrendingUp,
+    roles: ["ad_client"],
+  },
+  {
+    title: "My Contributions",
+    href: "/dashboard/sponsor",
+    icon: Heart,
+    roles: ["sponsor"],
+  },
+  {
+    title: "Impact Reports",
+    href: "/dashboard/sponsor",
+    icon: FileText,
+    roles: ["sponsor"],
   },
   {
     title: "Powerbanks",
     href: "/dashboard/admin/powerbanks",
     icon: Battery,
-    roles: ["super_admin"],
+    roles: ["super_admin", "admin"],
   },
   {
     title: "Users",
     href: "/dashboard/admin/users",
     icon: Users,
-    roles: ["super_admin"],
+    roles: ["super_admin", "admin"],
   },
-
-  // {
-  //   title: "Rentals",
-  //   href: "/dashboard/rentals",
-  //   icon: Battery,
-  //   roles: ["super_admin", "staff", "location_partner"],
-  // },
-
-  // {
-  //   title: "System Logs",
-  //   href: "/dashboard/admin/logs",
-  //   icon: Activity,
-  //   roles: ["super_admin", "staff"],
-  // },
-  // {
-  //   title: "Settings",
-  //   href: "/dashboard/settings",
-  //   icon: Settings,
-  //   roles: ["super_admin", "staff", "location_partner", "ad_client"],
-  // },
+  {
+    title: "Events",
+    href: "/dashboard/events",
+    icon: Megaphone,
+    roles: ["super_admin", "admin", "staff", "ad_client"],
+  },
+  {
+    title: "Settings",
+    href: "/dashboard/settings",
+    icon: Settings,
+    roles: ["super_admin", "admin", "staff", "location_partner", "ad_client", "sponsor"],
+  },
 ];
 
 import { useState } from "react";
@@ -235,12 +275,13 @@ export function Sidebar() {
 
           // Regular menu item
           const Icon = item.icon;
-          const isActive = pathname.startsWith(item.href);
+          const actualHref = item.dynamic && user?.role ? getRoleDashboard(user.role) : item.href;
+          const isActive = pathname.startsWith(actualHref);
 
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={actualHref}
               className={cn(
                 "flex items-center space-x-3 px-3 py-3 rounded-lg transition-all duration-200 group",
                 isActive

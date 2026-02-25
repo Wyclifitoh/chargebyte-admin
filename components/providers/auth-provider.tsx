@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export type UserRole = 'super_admin' | 'staff' | 'location_partner' | 'ad_client';
+export type UserRole = 'super_admin' | 'admin' | 'staff' | 'location_partner' | 'ad_client' | 'sponsor';
 
 export interface User {
   id: string;
@@ -12,11 +12,51 @@ export interface User {
   role: UserRole;
 }
 
+export const DEMO_USERS: User[] = [
+  {
+    id: '1',
+    email: 'superadmin@chargebyte.io',
+    name: 'Super Admin',
+    role: 'super_admin',
+  },
+  {
+    id: '2',
+    email: 'admin@chargebyte.io',
+    name: 'Admin User',
+    role: 'admin',
+  },
+  {
+    id: '3',
+    email: 'staff@chargebyte.io',
+    name: 'Staff Member',
+    role: 'staff',
+  },
+  {
+    id: '4',
+    email: 'partner@chargebyte.io',
+    name: 'Location Partner',
+    role: 'location_partner',
+  },
+  {
+    id: '5',
+    email: 'advertiser@chargebyte.io',
+    name: 'Advertising Partner',
+    role: 'ad_client',
+  },
+  {
+    id: '6',
+    email: 'sponsor@chargebyte.io',
+    name: 'Sponsor',
+    role: 'sponsor',
+  },
+];
+
 interface AuthContextType {
   user: User | null;
   login: (userData: User) => void;
   logout: () => void;
   hasPermission: (permissions: UserRole[]) => boolean;
+  demoLogin: (email: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -48,8 +88,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return user ? permissions.includes(user.role) : false;
   };
 
+  const demoLogin = (email: string): boolean => {
+    const demoUser = DEMO_USERS.find(u => u.email === email);
+    if (demoUser) {
+      login(demoUser);
+      return true;
+    }
+    return false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, login, logout, hasPermission, demoLogin }}>
       {children}
     </AuthContext.Provider>
   );

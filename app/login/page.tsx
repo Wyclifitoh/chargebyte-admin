@@ -2,205 +2,239 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useAuth } from "@/components/providers/auth-provider";
-import { Zap } from "lucide-react";
-import { toast } from "react-toastify";
+import { useAuth, DEMO_USERS, UserRole } from "@/components/providers/auth-provider";
+import { Zap, User, Lock, ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("super_admin");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { demoLogin } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Mock login - replace with actual API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Mock validation - Add more users here
-    const validUsers = [
-      {
-        email: "ochieng@chargebyte.io",
-        password: "admin@ChargeByte",
-        userData: {
-          id: "1",
-          email: "ochieng@chargebyte.io",
-          name: "Quinter Ochieng",
-          role: "super_admin" as const,
-        },
-      },
-      {
-        email: "info@chargebyte.io",
-        password: "@!CBAfrica2023",
-        userData: {
-          id: "2",
-          email: "info@chargebyte.io",
-          name: "ChargeByte Africa",
-          role: "super_admin" as const,
-        },
-      },
-      {
-        email: "stephannie@chargebyte.io",
-        password: "@!CBAfrica2023",
-        userData: {
-          id: "3",
-          email: "stephannie@chargebyte.io",
-          name: "Stephannie Mwangi",
-          role: "staff" as const,
-        },
-      },
-      {
-        email: "partner@example.com",
-        password: "partner123",
-        userData: {
-          id: "3",
-          email: "partner@example.com",
-          name: "Location Partner",
-          role: "location_partner" as const,
-        },
-      },
-    ];
+    const success = demoLogin(email);
 
-    // Find matching user
-    const matchedUser = validUsers.find((user) => user.email === email);
+    if (success) {
+      const user = DEMO_USERS.find(u => u.email === email);
+      toast.success(`Welcome back, ${user?.name}!`);
 
-    if (!matchedUser) {
-      toast.error("Invalid email address!");
-      setLoading(false);
-      return;
-    }
-
-    if (matchedUser.password !== password) {
-      toast.error("Incorrect password!");
-      setLoading(false);
-      return;
-    }
-
-    // Check if role matches (if role selection is required)
-    if (role && matchedUser.userData.role !== role) {
-      toast.error("Selected role doesn't match user's role!");
-      setLoading(false);
-      return;
-    }
-
-    login(matchedUser.userData);
-
-    // Redirect based on role
-    switch (matchedUser.userData.role) {
-      case "super_admin":
-        router.push("/dashboard/admin");
-        break;
-      case "location_partner":
-        router.push("/dashboard/rentals");
-        break;
-      default:
-        router.push("/dashboard/rentals");
+      switch (user?.role) {
+        case "super_admin":
+          router.push("/dashboard/super-admin");
+          break;
+        case "admin":
+          router.push("/dashboard/admin");
+          break;
+        case "staff":
+          router.push("/dashboard/staff");
+          break;
+        case "location_partner":
+          router.push("/dashboard/location-partner");
+          break;
+        case "ad_client":
+          router.push("/dashboard/advertising-partner");
+          break;
+        case "sponsor":
+          router.push("/dashboard/sponsor");
+          break;
+        default:
+          router.push("/dashboard");
+      }
+    } else {
+      toast.error("Invalid credentials. Use demo accounts below.");
     }
 
     setLoading(false);
   };
 
+  const handleDemoLogin = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword("demo123");
+  };
+
+  const getRoleBadgeColor = (role: UserRole) => {
+    const colors = {
+      super_admin: "bg-purple-100 text-purple-700 border-purple-200",
+      admin: "bg-blue-100 text-blue-700 border-blue-200",
+      staff: "bg-green-100 text-green-700 border-green-200",
+      location_partner: "bg-orange-100 text-orange-700 border-orange-200",
+      ad_client: "bg-pink-100 text-pink-700 border-pink-200",
+      sponsor: "bg-cyan-100 text-cyan-700 border-cyan-200",
+    };
+    return colors[role];
+  };
+
+  const getRoleLabel = (role: UserRole) => {
+    const labels = {
+      super_admin: "Super Admin",
+      admin: "Admin",
+      staff: "Staff",
+      location_partner: "Location Partner",
+      ad_client: "Advertising Partner",
+      sponsor: "Sponsor",
+    };
+    return labels[role];
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-emerald-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl border-0 bg-white/95 backdrop-blur">
-        <CardHeader className="text-center space-y-4">
-          <div className="flex items-center justify-center">
-            {/* <div className="p-3 bg-primary-500 rounded-xl">
-              <Zap className="h-8 w-8 text-white" />
-            </div> */}
-            <img
-              src="/images/logo/logo.png"
-              alt="ChargeByte Logo"
-              className="h-16 w-auto"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-6xl">
+        <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="space-y-6">
+            <div className="text-center lg:text-left">
+              <div className="flex items-center justify-center lg:justify-start mb-4">
+                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
+                  <Zap className="h-10 w-10 text-white" />
+                </div>
+              </div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Welcome to ChargeByte
+              </h1>
+              <p className="text-lg text-gray-600">
+                Smart Powerbank Rental Management System
+              </p>
+            </div>
+
+            <Card className="shadow-xl border-0 bg-white">
+              <CardContent className="p-8">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                      Email Address
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="h-12 pl-10 bg-gray-50 border-gray-200 focus:bg-white"
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                      Password
+                    </Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="h-12 pl-10 bg-gray-50 border-gray-200 focus:bg-white"
+                        placeholder="Enter your password"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium text-base shadow-lg shadow-emerald-500/30"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      "Signing in..."
+                    ) : (
+                      <span className="flex items-center justify-center gap-2">
+                        Sign In
+                        <ArrowRight className="h-5 w-5" />
+                      </span>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
-          <div>
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Welcome to Chargebyte
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Smart Powerbank Rental System
-            </CardDescription>
+
+          <div className="space-y-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-md">
+              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                Demo Credentials
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Click any account below to auto-fill login
+              </p>
+              <div className="space-y-2">
+                {DEMO_USERS.map((user) => (
+                  <button
+                    key={user.id}
+                    type="button"
+                    onClick={() => handleDemoLogin(user.email)}
+                    className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 group"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900 group-hover:text-emerald-700">
+                        {user.name}
+                      </span>
+                      <span
+                        className={`text-xs font-medium px-3 py-1 rounded-full border ${getRoleBadgeColor(
+                          user.role
+                        )}`}
+                      >
+                        {getRoleLabel(user.role)}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600 font-mono">
+                      {user.email}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200 p-6">
+              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <Zap className="h-5 w-5 text-emerald-600" />
+                Role Capabilities
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 font-bold">•</span>
+                  <span><strong>Super Admin:</strong> Full system access & configuration</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-600 font-bold">•</span>
+                  <span><strong>Admin:</strong> Manage users, stations & analytics</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-green-600 font-bold">•</span>
+                  <span><strong>Staff:</strong> Handle activations & rentals</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-orange-600 font-bold">•</span>
+                  <span><strong>Location Partner:</strong> Track station revenue</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-pink-600 font-bold">•</span>
+                  <span><strong>Ad Partner:</strong> Manage ad campaigns</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-600 font-bold">•</span>
+                  <span><strong>Sponsor:</strong> View impact & contributions</span>
+                </li>
+              </ul>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="h-11"
-                placeholder="Enter your email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="h-11"
-                placeholder="Enter your password"
-              />
-            </div>
-
-            <div className="space-y-2 hidden">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole} required>
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
-                  <SelectItem value="location_partner">
-                    Location Partner
-                  </SelectItem>
-                  <SelectItem value="ad_client">
-                    Advertisement Client
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full h-11 bg-primary-500 hover:bg-primary-600 text-white font-medium"
-              disabled={loading}
-            >
-              {loading ? "Signing in..." : "Sign In"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
