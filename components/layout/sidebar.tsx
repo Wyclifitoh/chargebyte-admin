@@ -24,6 +24,13 @@ import {
   Heart,
   Eye,
   TrendingUp,
+  UserCheck,
+  ClipboardList,
+  Target,
+  UserPlus,
+  PhoneCall,
+  Calendar,
+  BarChart,
 } from "lucide-react";
 
 const getRoleDashboard = (role: string) => {
@@ -47,10 +54,60 @@ const menuItems = [
     dynamic: true,
   },
   {
-    title: "System Config",
-    href: "/dashboard/super-admin",
-    icon: Shield,
-    roles: ["super_admin"],
+    title: "Team Management",
+    href: "/team",
+    icon: Users,
+    roles: ["super_admin", "admin"],
+    items: [
+      {
+        title: "Team Members",
+        href: "/dashboard/team/members",
+        icon: Users,
+      },
+      {
+        title: "Attendance",
+        href: "/dashboard/team/attendance",
+        icon: UserCheck,
+      },
+      {
+        title: "Performance",
+        href: "/dashboard/team/performance",
+        icon: BarChart,
+      },
+      {
+        title: "Reports",
+        href: "/dashboard/team/reports",
+        icon: FileText,
+      },
+    ],
+  },
+  {
+    title: "CRM",
+    href: "/crm",
+    icon: Target,
+    roles: ["super_admin", "admin", "staff"],
+    items: [
+      {
+        title: "Leads",
+        href: "/dashboard/crm/leads",
+        icon: UserPlus,
+      },
+      {
+        title: "Customers",
+        href: "/dashboard/crm/customers",
+        icon: Users,
+      },
+      {
+        title: "Follow-ups",
+        href: "/dashboard/crm/followups",
+        icon: PhoneCall,
+      },
+      {
+        title: "Weekly Plans",
+        href: "/dashboard/crm/plans",
+        icon: Calendar,
+      },
+    ],
   },
   {
     title: "Analytics",
@@ -89,6 +146,12 @@ const menuItems = [
     roles: ["super_admin", "admin"],
   },
   {
+    title: "Powerbanks",
+    href: "/dashboard/admin/powerbanks",
+    icon: Battery,
+    roles: ["super_admin", "admin"],
+  },
+  {
     title: "My Stations",
     href: "/dashboard/location-partner",
     icon: MapPin,
@@ -107,40 +170,10 @@ const menuItems = [
     roles: ["ad_client"],
   },
   {
-    title: "Campaign Analytics",
-    href: "/dashboard/advertising-partner",
-    icon: TrendingUp,
-    roles: ["ad_client"],
-  },
-  {
     title: "My Contributions",
     href: "/dashboard/sponsor",
     icon: Heart,
     roles: ["sponsor"],
-  },
-  {
-    title: "Impact Reports",
-    href: "/dashboard/sponsor",
-    icon: FileText,
-    roles: ["sponsor"],
-  },
-  {
-    title: "Powerbanks",
-    href: "/dashboard/admin/powerbanks",
-    icon: Battery,
-    roles: ["super_admin", "admin"],
-  },
-  {
-    title: "Users",
-    href: "/dashboard/admin/users",
-    icon: Users,
-    roles: ["super_admin", "admin"],
-  },
-  {
-    title: "Events",
-    href: "/dashboard/events",
-    icon: Megaphone,
-    roles: ["super_admin", "admin", "staff", "ad_client"],
   },
   {
     title: "Settings",
@@ -244,8 +277,8 @@ export function Sidebar() {
   );
 
   return (
-    <div className="w-64 bg-white shadow-lg flex flex-col">
-      <div className="p-6 border-b border-gray-200">
+    <div className="w-64 bg-white shadow-lg flex flex-col h-screen">
+      <div className="p-6 border-b border-gray-200 flex-shrink-0">
         <Link href="/dashboard" className="flex items-center space-x-3">
           <div className="p-2 bg-primary-500 rounded-lg">
             <Zap className="h-6 w-6 text-white" />
@@ -259,7 +292,7 @@ export function Sidebar() {
         </Link>
       </div>
 
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {filteredMenuItems.map((item) => {
           // If menu item has sub-items, render dropdown version
           if (item.items) {

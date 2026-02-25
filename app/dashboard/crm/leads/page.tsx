@@ -1,11 +1,26 @@
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +38,10 @@ import {
   Building,
   Calendar,
   ArrowRight,
-  Filter,
+  Download,
+  DollarSign,
+  Flame,
+  TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -41,47 +59,47 @@ const mockLeads = [
     value: 500000,
     lastContact: '2024-02-24',
     nextFollowup: '2024-02-26',
-    notes: 'Interested in 3 stations for main entrance and food court',
+    notes: 'Ready to sign contract - high interest',
   },
   {
     id: 'L002',
-    name: 'SafaricomPLC',
-    contact: 'Sarah Njeri',
-    email: 'sarah.njeri@safaricom.co.ke',
-    phone: '+254 711 234 567',
-    type: 'Sponsor',
-    status: 'warm',
-    source: 'LinkedIn',
-    value: 2000000,
-    lastContact: '2024-02-23',
-    nextFollowup: '2024-02-27',
-    notes: 'CSR initiative - wants to sponsor 10 locations in underserved areas',
-  },
-  {
-    id: 'L003',
     name: 'The Hub Karen',
     contact: 'David Omondi',
     email: 'david@thehub.co.ke',
     phone: '+254 722 345 678',
     type: 'Location Partner',
+    status: 'warm',
+    source: 'Website Inquiry',
+    value: 350000,
+    lastContact: '2024-02-22',
+    nextFollowup: '2024-02-27',
+    notes: 'Needs pricing proposal and timeline',
+  },
+  {
+    id: 'L003',
+    name: 'Safaricom PLC',
+    contact: 'Sarah Njeri',
+    email: 'sarah.njeri@safaricom.co.ke',
+    phone: '+254 711 234 567',
+    type: 'Sponsor',
     status: 'hot',
-    source: 'Cold Call',
-    value: 300000,
-    lastContact: '2024-02-25',
-    nextFollowup: '2024-02-26',
-    notes: 'Ready to sign - waiting for contract review',
+    source: 'LinkedIn',
+    value: 2000000,
+    lastContact: '2024-02-23',
+    nextFollowup: '2024-02-27',
+    notes: 'Interested in CSR partnership opportunity',
   },
   {
     id: 'L004',
     name: 'Coca-Cola Kenya',
     contact: 'Ann Wambui',
-    email: 'ann.wambui@cocacola.co.ke',
+    email: 'ann@cocacola.co.ke',
     phone: '+254 733 456 789',
     type: 'Advertiser',
     status: 'warm',
-    source: 'Website',
-    value: 1500000,
-    lastContact: '2024-02-22',
+    source: 'Cold Call',
+    value: 1000000,
+    lastContact: '2024-02-21',
     nextFollowup: '2024-02-28',
     notes: 'Interested in station branding and ad campaigns',
   },
@@ -103,6 +121,8 @@ const mockLeads = [
 
 export default function CRMLeadsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [leads, setLeads] = useState(mockLeads);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newLead, setNewLead] = useState({
@@ -114,6 +134,19 @@ export default function CRMLeadsPage() {
     value: '',
     notes: '',
   });
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'hot':
+        return 'bg-red-100 text-red-700 border-red-200';
+      case 'warm':
+        return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'cold':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
 
   const handleAddLead = () => {
     if (!newLead.name || !newLead.email) {
@@ -144,24 +177,29 @@ export default function CRMLeadsPage() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'hot':
-        return 'bg-red-100 text-red-700 border-red-200';
-      case 'warm':
-        return 'bg-orange-100 text-orange-700 border-orange-200';
-      case 'cold':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
-    }
+  const handleScheduleCall = (leadId: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    toast.success(`Call scheduled with ${lead?.contact}`);
   };
 
+  const handleExport = () => {
+    toast.success('Leads data exported successfully!');
+  };
+
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = lead.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.contact.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lead.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
+    const matchesType = typeFilter === 'all' || lead.type === typeFilter;
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
   const stats = [
-    { label: 'Total Leads', value: leads.length, color: 'text-blue-600' },
-    { label: 'Hot Leads', value: leads.filter(l => l.status === 'hot').length, color: 'text-red-600' },
-    { label: 'Warm Leads', value: leads.filter(l => l.status === 'warm').length, color: 'text-orange-600' },
-    { label: 'Cold Leads', value: leads.filter(l => l.status === 'cold').length, color: 'text-blue-600' },
+    { label: 'Total Leads', value: leads.length, color: 'text-blue-600', bgColor: 'border-l-blue-500' },
+    { label: 'Hot Leads', value: leads.filter(l => l.status === 'hot').length, color: 'text-red-600', bgColor: 'border-l-red-500' },
+    { label: 'Warm Leads', value: leads.filter(l => l.status === 'warm').length, color: 'text-orange-600', bgColor: 'border-l-orange-500' },
+    { label: 'Cold Leads', value: leads.filter(l => l.status === 'cold').length, color: 'text-blue-600', bgColor: 'border-l-blue-400' },
   ];
 
   return (
@@ -172,9 +210,9 @@ export default function CRMLeadsPage() {
           <p className="text-gray-600">Track and convert your sales leads</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
+          <Button variant="outline" onClick={handleExport}>
+            <Download className="h-4 w-4 mr-2" />
+            Export
           </Button>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
@@ -269,126 +307,168 @@ export default function CRMLeadsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
+        {stats.map((stat, index) => (
+          <Card key={index} className={`border-l-4 ${stat.bgColor}`}>
             <CardContent className="p-6">
-              <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-              <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+                  <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
+                </div>
+                {stat.label === 'Hot Leads' && <Flame className="h-8 w-8 text-red-500" />}
+                {stat.label === 'Total Leads' && <UserPlus className="h-8 w-8 text-blue-500" />}
+                {stat.label === 'Warm Leads' && <TrendingUp className="h-8 w-8 text-orange-500" />}
+                {stat.label === 'Cold Leads' && <UserPlus className="h-8 w-8 text-blue-400" />}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Leads List */}
+      {/* Filters and Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <CardTitle>All Leads</CardTitle>
-            <div className="relative w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search leads..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="hot">Hot</SelectItem>
+                  <SelectItem value="warm">Warm</SelectItem>
+                  <SelectItem value="cold">Cold</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-52">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="Location Partner">Location Partner</SelectItem>
+                  <SelectItem value="Sponsor">Sponsor</SelectItem>
+                  <SelectItem value="Advertiser">Advertiser</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {leads.map((lead) => (
-              <Card key={lead.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
-                          <Building className="h-6 w-6 text-white" />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Lead</TableHead>
+                  <TableHead>Contact Info</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Value</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Last Contact</TableHead>
+                  <TableHead>Next Follow-up</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLeads.map((lead) => (
+                  <TableRow key={lead.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold">
+                          {lead.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{lead.name}</h3>
+                          <p className="font-semibold text-gray-900">{lead.name}</p>
                           <p className="text-sm text-gray-600">{lead.contact}</p>
                         </div>
-                        <Badge variant="outline" className={getStatusColor(lead.status)}>
-                          {lead.status.toUpperCase()}
-                        </Badge>
                       </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="h-4 w-4" />
-                          <span className="truncate">{lead.email}</span>
+                          <Mail className="h-3 w-3 text-gray-400" />
+                          <span>{lead.email}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="h-4 w-4" />
+                          <Phone className="h-3 w-3 text-gray-400" />
                           <span>{lead.phone}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <UserPlus className="h-4 w-4" />
-                          <span>{lead.type}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Calendar className="h-4 w-4" />
-                          <span>Follow-up: {new Date(lead.nextFollowup).toLocaleDateString()}</span>
-                        </div>
                       </div>
-
-                      <div className="flex items-center gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-gray-500">Potential Value</p>
-                          <p className="text-lg font-bold text-emerald-600">
-                            KES {lead.value.toLocaleString()}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Source</p>
-                          <p className="text-sm font-medium text-gray-900">{lead.source}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Last Contact</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {new Date(lead.lastContact).toLocaleDateString()}
-                          </p>
-                        </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">{lead.type}</span>
                       </div>
-
-                      <div className="p-3 bg-gray-50 rounded-lg mb-4">
-                        <p className="text-sm text-gray-700">
-                          <strong>Notes:</strong> {lead.notes}
-                        </p>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getStatusColor(lead.status)}>
+                        {lead.status.toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4 text-emerald-600" />
+                        <span className="font-semibold text-emerald-600">
+                          KES {(lead.value / 1000).toFixed(0)}K
+                        </span>
                       </div>
-
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">{lead.source}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-gray-600">
+                        {new Date(lead.lastContact).toLocaleDateString()}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        <span>{new Date(lead.nextFollowup).toLocaleDateString()}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex gap-2">
                         <Button
-                          variant="outline"
                           size="sm"
-                          onClick={() => toast.success(`Call scheduled with ${lead.contact}`)}
-                        >
-                          Schedule Call
-                        </Button>
-                        <Button
                           variant="outline"
-                          size="sm"
-                          onClick={() => toast.success(`Email sent to ${lead.email}`)}
+                          onClick={() => handleScheduleCall(lead.id)}
                         >
-                          Send Email
+                          Schedule
                         </Button>
                         <Button
                           size="sm"
                           className="bg-emerald-600 hover:bg-emerald-700"
                           onClick={() => handleConvertToCustomer(lead.id)}
                         >
-                          Convert to Customer
-                          <ArrowRight className="h-4 w-4 ml-2" />
+                          <ArrowRight className="h-3 w-3 mr-1" />
+                          Convert
                         </Button>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
+          {filteredLeads.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              No leads found matching your filters
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
