@@ -170,6 +170,25 @@ export default function AnalyticsPage() {
     );
   }
 
+  // Helper function to safely parse numeric values
+  const parseNumericValue = (
+    value: string | number | null | undefined,
+  ): number => {
+    if (value === null || value === undefined) return 0;
+    if (typeof value === "number") return value;
+    return parseFloat(value) || 0;
+  };
+
+  // Helper to safely divide two values
+  const safeDivide = (
+    numerator: string | number,
+    denominator: string | number,
+  ): number => {
+    const num = parseNumericValue(numerator);
+    const den = parseNumericValue(denominator);
+    return den === 0 ? 0 : num / den;
+  };
+
   // Helper functions to parse string values from API
   const parseNumber = (value: string | number | null | undefined): number => {
     if (value === null || value === undefined) return 0;
@@ -403,6 +422,18 @@ export default function AnalyticsPage() {
       </div>
     );
   }
+
+  const chartData = genderData.map((item) => ({
+    name: item.gender,
+    value: item.customer_count,
+    gender: item.gender,
+    customer_count: item.customer_count,
+    rental_count: item.rental_count,
+    revenue_kes: item.revenue_kes,
+    revenue_usd: item.revenue_usd,
+    customer_percentage: item.customer_percentage,
+    revenue_percentage: item.revenue_percentage,
+  }));
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -1119,98 +1150,176 @@ export default function AnalyticsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Gender Distribution</CardTitle>
-          <CardDescription>Customer breakdown by gender</CardDescription>
+          <CardDescription>
+            Customer breakdown for selected period:{" "}
+            {timeRange === "last7days"
+              ? "Last 7 Days"
+              : timeRange === "last30days"
+                ? "Last 30 Days"
+                : timeRange === "last3months"
+                  ? "Last 3 Months"
+                  : "Last 4 Months"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Pie Chart - Show active customer distribution */}
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={genderData as any}
+                  data={chartData}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
                   outerRadius={100}
                   fill="#8884d8"
-                  dataKey="revenue_percentage"
-                  // label={(
-                  //   entry: any, // Use any for the entry
-                  // ) =>
-                  //   `${entry.gender || "Unknown"}: ${parseNumber(entry.revenue_percentage).toFixed(1)}%`
-                  // }
+                  dataKey="customer_count"
+                  label={(entry: any) => {
+                    const totalActive = genderData.reduce(
+                      (sum, g) => sum + g.customer_count,
+                      0,
+                    );
+                    const percentage = (
+                      (entry.customer_count / totalActive) *
+                      100
+                    ).toFixed(1);
+                    return `${entry.gender}: ${percentage}%`;
+                  }}
                 >
                   {genderData.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
-                      fill={
-                        entry.gender === "Female"
-                          ? "#ec4899"
-                          : entry.gender === "Male"
-                            ? "#3b82f6"
-                            : "#9ca3af"
-                      }
+                      fill={entry.gender === "Female" ? "#ec4899" : "#3b82f6"}
                     />
                   ))}
                 </Pie>
                 <Tooltip
                   formatter={(value: any, name: string, props: any) => {
-                    if (name === "revenue_percentage")
-                      return [`${parseNumber(value).toFixed(1)}%`, "Revenue %"];
+                    if (name === "customer_count")
+                      return [formatNumber(value), "Active Customers"];
                     return [value, name];
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
 
+            {/* Stats Cards - Show correct percentages */}
             <div className="space-y-4">
-              {genderData.map((gender) => (
-                <div
-                  key={gender.gender || "unknown"}
-                  className="p-4 border rounded-lg"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <User
-                        className={`h-5 w-5 ${
-                          gender.gender === "Female"
-                            ? "text-pink-500"
-                            : gender.gender === "Male"
-                              ? "text-blue-500"
-                              : "text-gray-500"
-                        }`}
-                      />
-                      <span className="font-medium">
-                        {gender.gender || "Unknown"}
-                      </span>
-                    </div>
-                    <Badge variant="outline">
-                      {formatNumber(gender.customer_count)} customers
-                    </Badge>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <div className="text-xs text-gray-500">Revenue Share</div>
-                      <div className="font-bold">
-                        {formatPercentage(gender.revenue_percentage)}
-                      </div>
-                      <div className="text-xs">
-                        {formatUSD(gender.revenue_usd)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500">
-                        Customer Share
-                      </div>
-                      <div className="font-bold">
-                        {formatPercentage(gender.customer_percentage)}
-                      </div>
-                      <div className="text-xs">
-                        {formatNumber(gender.rental_count)} rentals
-                      </div>
-                    </div>
-                  </div>
+              {/* Summary Card - Total Active Customers */}
+              <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                <div className="text-sm font-medium">
+                  Active Customers in Period
                 </div>
-              ))}
+                <div className="text-2xl font-bold">
+                  {formatNumber(
+                    genderData.reduce((sum, g) => sum + g.customer_count, 0),
+                  )}
+                </div>
+                <div className="text-xs text-gray-600">
+                  out of {formatNumber(32585)} total registered
+                </div>
+              </div>
+
+              {genderData.map((gender) => {
+                const totalActive = genderData.reduce(
+                  (sum, g) => sum + g.customer_count,
+                  0,
+                );
+                const totalRevenue = genderData.reduce(
+                  (sum, g) => sum + parseNumericValue(g.revenue_usd),
+                  0,
+                );
+
+                const customerShareOfActive = (
+                  (gender.customer_count / totalActive) *
+                  100
+                ).toFixed(1);
+                const revenueShareOfActive = (
+                  (parseNumericValue(gender.revenue_usd) / totalRevenue) *
+                  100
+                ).toFixed(1);
+
+                const revenuePerRental = safeDivide(
+                  gender.revenue_usd,
+                  gender.rental_count,
+                );
+                const avgKesPerRental = revenuePerRental / 0.13; // Convert USD to KES (approximate)
+
+                return (
+                  <div key={gender.gender} className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <User
+                          className={`h-5 w-5 ${
+                            gender.gender === "Female"
+                              ? "text-pink-500"
+                              : "text-blue-500"
+                          }`}
+                        />
+                        <span className="font-medium text-lg">
+                          {gender.gender}
+                        </span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        {formatNumber(gender.customer_count)} active
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-xs text-gray-500">
+                          Active Customers
+                        </div>
+                        <div className="font-bold text-lg">
+                          {formatNumber(gender.customer_count)}
+                        </div>
+                        <div className="text-xs font-medium text-blue-600">
+                          {customerShareOfActive}% of active
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          ({((gender.customer_count / 32585) * 100).toFixed(1)}%
+                          of total)
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-xs text-gray-500">Rentals</div>
+                        <div className="font-bold text-lg">
+                          {formatNumber(gender.rental_count)}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          {(
+                            gender.rental_count / gender.customer_count
+                          ).toFixed(1)}{" "}
+                          per customer
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-xs text-gray-500">Revenue</div>
+                        <div className="font-bold text-lg">
+                          {formatUSD(gender.revenue_usd)}
+                        </div>
+                        <div className="text-xs font-medium text-green-600">
+                          {revenueShareOfActive}% of period revenue
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-50 p-3 rounded">
+                        <div className="text-xs text-gray-500">
+                          Avg per Rental
+                        </div>
+                        <div className="font-bold text-lg">
+                          {formatUSD(revenuePerRental)}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          Avg {avgKesPerRental.toFixed(0)} KES
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </CardContent>
