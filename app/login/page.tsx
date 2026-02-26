@@ -88,25 +88,37 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl">
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          backgroundImage: 'url(https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/90 via-teal-900/85 to-slate-900/90"></div>
+      </div>
+
+      <div className="w-full max-w-6xl relative z-10">
         <div className="grid lg:grid-cols-2 gap-8 items-start">
           <div className="space-y-6">
             <div className="text-center lg:text-left">
               <div className="flex items-center justify-center lg:justify-start mb-4">
-                <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
+                <div className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
                   <Zap className="h-10 w-10 text-white" />
                 </div>
               </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-4xl font-bold text-white mb-2">
                 Welcome to ChargeByte
               </h1>
-              <p className="text-lg text-gray-600">
+              <p className="text-lg text-emerald-100">
                 Smart Powerbank Rental Management System
               </p>
             </div>
 
-            <Card className="shadow-xl border-0 bg-white">
+            <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm">
               <CardContent className="p-8">
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
@@ -165,7 +177,7 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-md">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-md">
               <h3 className="text-lg font-semibold text-gray-900 mb-1">
                 Demo Credentials
               </h3>
@@ -178,7 +190,7 @@ export default function LoginPage() {
                     key={user.id}
                     type="button"
                     onClick={() => handleDemoLogin(user.email)}
-                    className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 group"
+                    className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 group bg-white"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-medium text-gray-900 group-hover:text-emerald-700">
@@ -200,7 +212,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-lg border border-emerald-200 p-6">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-white/20 p-6">
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <Zap className="h-5 w-5 text-emerald-600" />
                 Role Capabilities
