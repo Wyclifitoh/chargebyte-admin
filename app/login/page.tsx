@@ -88,162 +88,107 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: 'url(https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/90 via-teal-900/85 to-slate-900/90"></div>
-      </div>
-
-      <div className="w-full max-w-6xl relative z-10">
-        <div className="grid lg:grid-cols-2 gap-8 items-start">
-          <div className="space-y-6">
-            <div className="text-center lg:text-left">
-              <div className="flex items-center justify-center lg:justify-start mb-4">
-                <div className="p-3 bg-white/10 backdrop-blur-sm rounded-2xl shadow-lg border border-white/20">
-                  <Zap className="h-10 w-10 text-white" />
-                </div>
+    <div className="min-h-screen flex">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <div className="flex items-center justify-center mb-6">
+              <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl shadow-lg">
+                <Zap className="h-10 w-10 text-white" />
               </div>
-              <h1 className="text-4xl font-bold text-white mb-2">
-                Welcome to ChargeByte
-              </h1>
-              <p className="text-lg text-emerald-100">
-                Smart Powerbank Rental Management System
-              </p>
             </div>
-
-            <Card className="shadow-xl border-0 bg-white/95 backdrop-blur-sm">
-              <CardContent className="p-8">
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                      Email Address
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        id="email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="h-12 pl-10 bg-gray-50 border-gray-200 focus:bg-white"
-                        placeholder="Enter your email"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-                      Password
-                    </Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        id="password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="h-12 pl-10 bg-gray-50 border-gray-200 focus:bg-white"
-                        placeholder="Enter your password"
-                      />
-                    </div>
-                  </div>
-
-                  <Button
-                    type="submit"
-                    className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium text-base shadow-lg shadow-emerald-500/30"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      "Signing in..."
-                    ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        Sign In
-                        <ArrowRight className="h-5 w-5" />
-                      </span>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome Back
+            </h1>
+            <p className="text-gray-600">
+              Sign in to your ChargeByte account
+            </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-white/20 p-6 shadow-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                Demo Credentials
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                Click any account below to auto-fill login
-              </p>
-              <div className="space-y-2">
-                {DEMO_USERS.map((user) => (
-                  <button
-                    key={user.id}
-                    type="button"
-                    onClick={() => handleDemoLogin(user.email)}
-                    className="w-full text-left p-4 rounded-lg border border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all duration-200 group bg-white"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium text-gray-900 group-hover:text-emerald-700">
-                        {user.name}
-                      </span>
-                      <span
-                        className={`text-xs font-medium px-3 py-1 rounded-full border ${getRoleBadgeColor(
-                          user.role
-                        )}`}
-                      >
-                        {getRoleLabel(user.role)}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 font-mono">
-                      {user.email}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
+          <Card className="shadow-lg border border-gray-200">
+            <CardContent className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                    Email Address
+                  </Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="h-12 pl-10 bg-gray-50 border-gray-200 focus:bg-white"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                </div>
 
-            <div className="bg-white/95 backdrop-blur-sm rounded-lg border border-white/20 p-6">
-              <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Zap className="h-5 w-5 text-emerald-600" />
-                Role Capabilities
-              </h4>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-600 font-bold">•</span>
-                  <span><strong>Super Admin:</strong> Full system access & configuration</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600 font-bold">•</span>
-                  <span><strong>Admin:</strong> Manage users, stations & analytics</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-green-600 font-bold">•</span>
-                  <span><strong>Staff:</strong> Handle activations & rentals</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-orange-600 font-bold">•</span>
-                  <span><strong>Location Partner:</strong> Track station revenue</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-pink-600 font-bold">•</span>
-                  <span><strong>Ad Partner:</strong> Manage ad campaigns</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cyan-600 font-bold">•</span>
-                  <span><strong>Sponsor:</strong> View impact & contributions</span>
-                </li>
-              </ul>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-12 pl-10 bg-gray-50 border-gray-200 focus:bg-white"
+                      placeholder="Enter your password"
+                    />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-medium text-base shadow-lg shadow-emerald-500/30"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    "Signing in..."
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      Sign In
+                      <ArrowRight className="h-5 w-5" />
+                    </span>
+                  )}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="hidden lg:flex lg:w-1/2 relative">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: 'url(https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+          }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/90 via-teal-600/85 to-emerald-700/90"></div>
+        </div>
+
+        <div className="relative z-10 flex flex-col items-center justify-center w-full p-12 text-center">
+          <Zap className="h-20 w-20 text-white mb-6" />
+          <h2 className="text-4xl font-bold text-white mb-4">
+            Power On The Go
+          </h2>
+          <p className="text-xl text-white/90 mb-8 max-w-md">
+            Empowering your devices, anywhere, anytime. Join the revolution in mobile charging solutions.
+          </p>
+          <div className="flex items-center gap-3 text-white/80">
+            <div className="h-px w-12 bg-white/50"></div>
+            <span className="text-sm uppercase tracking-wider">ChargeByte</span>
+            <div className="h-px w-12 bg-white/50"></div>
           </div>
         </div>
       </div>
