@@ -3,7 +3,23 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Calendar } from '@/components/ui/calendar';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -20,9 +36,12 @@ import {
   XCircle,
   AlertCircle,
   Download,
+  Search,
+  Filter,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const mockAttendanceData = [
   {
@@ -81,6 +100,8 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [attendanceRecords, setAttendanceRecords] = useState(mockAttendanceData);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -126,6 +147,13 @@ export default function AttendancePage() {
   const handleExportAttendance = () => {
     toast.success('Attendance report exported successfully!');
   };
+
+  const filteredRecords = attendanceRecords.filter((record) => {
+    const matchesSearch = record.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         record.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const stats = {
     present: attendanceRecords.filter(r => r.status === 'present').length,
@@ -274,73 +302,121 @@ export default function AttendancePage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Calendar */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Select Date</CardTitle>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border"
-            />
-          </CardContent>
-        </Card>
-
-        {/* Attendance Records */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Today&apos;s Attendance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {attendanceRecords.map((record) => (
-                <Card key={record.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white font-bold">
-                          {record.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900">{record.name}</h4>
-                          <p className="text-sm text-gray-600">{record.location}</p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <Clock className="h-4 w-4" />
-                            <span>{record.checkIn}</span>
-                            <span>-</span>
-                            <span>{record.checkOut}</span>
+      {/* Attendance Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <CardTitle>Attendance Records - {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Today'}</CardTitle>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by name or location..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="present">Present</SelectItem>
+                  <SelectItem value="late">Late</SelectItem>
+                  <SelectItem value="absent">Absent</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Team Member</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Check In</TableHead>
+                  <TableHead>Check Out</TableHead>
+                  <TableHead className="text-center">Hours Worked</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredRecords.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                      No attendance records found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredRecords.map((record) => (
+                    <TableRow key={record.id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                            {record.name.split(' ').map(n => n[0]).join('')}
                           </div>
-                          {record.hoursWorked > 0 && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {record.hoursWorked} hours worked
-                            </p>
-                          )}
+                          <div>
+                            <p className="font-medium text-gray-900">{record.name}</p>
+                          </div>
                         </div>
-
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">{record.location}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          <span className={`text-sm ${record.checkIn === '-' ? 'text-gray-400' : 'text-gray-900'}`}>
+                            {record.checkIn}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-gray-400" />
+                          <span className={`text-sm ${record.checkOut === '-' ? 'text-gray-400' : 'text-gray-900'}`}>
+                            {record.checkOut}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm font-medium text-gray-900">
+                          {record.hoursWorked > 0 ? `${record.hoursWorked}h` : '-'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="outline" className={getStatusColor(record.status)}>
                           <span className="flex items-center gap-1">
                             {getStatusIcon(record.status)}
                             {record.status.replace('_', ' ')}
                           </span>
                         </Badge>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            toast.info('Edit attendance functionality');
+                          }}
+                        >
+                          Edit
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

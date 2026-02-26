@@ -58,7 +58,6 @@ const mockTeamMembers = [
     joinDate: '2024-01-15',
     status: 'active',
     performance: 92,
-    activations: 156,
     leadsConverted: 45,
   },
   {
@@ -71,7 +70,6 @@ const mockTeamMembers = [
     joinDate: '2023-11-20',
     status: 'active',
     performance: 96,
-    activations: 203,
     leadsConverted: 67,
   },
   {
@@ -84,7 +82,6 @@ const mockTeamMembers = [
     joinDate: '2024-02-01',
     status: 'active',
     performance: 88,
-    activations: 134,
     leadsConverted: 38,
   },
   {
@@ -97,7 +94,6 @@ const mockTeamMembers = [
     joinDate: '2024-01-10',
     status: 'on_leave',
     performance: 85,
-    activations: 98,
     leadsConverted: 29,
   },
 ];
@@ -278,9 +274,9 @@ export default function TeamMembersPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600 mb-1">Total Activations</p>
+                <p className="text-sm text-gray-600 mb-1">Total Conversions</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {mockTeamMembers.reduce((sum, m) => sum + m.activations, 0)}
+                  {mockTeamMembers.reduce((sum, m) => sum + m.leadsConverted, 0)}
                 </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-lg">
@@ -506,19 +502,15 @@ export default function TeamMembersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-1">Total Activations</p>
-                  <p className="text-2xl font-bold text-blue-600">{selectedMember.activations}</p>
-                </div>
+              <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div className="text-center">
                   <p className="text-sm text-gray-500 mb-1">Leads Converted</p>
                   <p className="text-2xl font-bold text-purple-600">{selectedMember.leadsConverted}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-gray-500 mb-1">Conversion Rate</p>
+                  <p className="text-sm text-gray-500 mb-1">Performance Score</p>
                   <p className="text-2xl font-bold text-emerald-600">
-                    {Math.round((selectedMember.leadsConverted / selectedMember.activations) * 100)}%
+                    {selectedMember.performance}%
                   </p>
                 </div>
               </div>
@@ -538,14 +530,7 @@ export default function TeamMembersPage() {
           </DialogHeader>
           {selectedMember && (
             <div className="space-y-6">
-              <div className="grid grid-cols-4 gap-4">
-                <Card className="border-l-4 border-l-blue-500">
-                  <CardContent className="p-4">
-                    <p className="text-sm text-gray-600">Activations</p>
-                    <p className="text-2xl font-bold text-gray-900">{selectedMember.activations}</p>
-                    <p className="text-xs text-green-600 mt-1">+12% from last month</p>
-                  </CardContent>
-                </Card>
+              <div className="grid grid-cols-3 gap-4">
                 <Card className="border-l-4 border-l-purple-500">
                   <CardContent className="p-4">
                     <p className="text-sm text-gray-600">Conversions</p>
