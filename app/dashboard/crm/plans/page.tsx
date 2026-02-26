@@ -6,6 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -23,12 +26,22 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+const getCurrentWeekRange = () => {
+  const now = new Date();
+  const start = startOfWeek(now, { weekStartsOn: 1 });
+  const end = endOfWeek(now, { weekStartsOn: 1 });
+  return { start, end };
+};
 
 const mockPlans = [
   {
     id: 'P001',
     member: 'John Kamau',
-    week: 'Week 9, 2024',
+    startDate: '2024-02-26',
+    endDate: '2024-03-01',
     goals: [
       { id: 1, text: 'Complete 50 activations', completed: false },
       { id: 2, text: 'Generate 10 new leads', completed: false },
@@ -36,12 +49,12 @@ const mockPlans = [
       { id: 4, text: 'Conduct team training session', completed: false },
     ],
     notes: 'Focus on CBD and Westlands areas this week',
-    targetRevenue: 500000,
   },
   {
     id: 'P002',
     member: 'Mary Wanjiru',
-    week: 'Week 9, 2024',
+    startDate: '2024-02-26',
+    endDate: '2024-03-01',
     goals: [
       { id: 1, text: 'Meet with 5 potential sponsors', completed: true },
       { id: 2, text: 'Complete 30 activations', completed: false },
@@ -49,23 +62,41 @@ const mockPlans = [
       { id: 4, text: 'Update CRM data', completed: false },
     ],
     notes: 'Priority on sponsor relationships',
-    targetRevenue: 750000,
   },
 ];
+
+const getWeekOptions = () => {
+  const weeks = [];
+  const today = new Date();
+
+  for (let i = -2; i <= 4; i++) {
+    const weekStart = startOfWeek(addDays(today, i * 7), { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(addDays(today, i * 7), { weekStartsOn: 1 });
+    weeks.push({
+      label: `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d, yyyy')}`,
+      start: format(weekStart, 'yyyy-MM-dd'),
+      end: format(weekEnd, 'yyyy-MM-dd'),
+    });
+  }
+
+  return weeks;
+};
 
 export default function PlansPage() {
   const [plans, setPlans] = useState(mockPlans);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const weekOptions = getWeekOptions();
+  const [selectedWeek, setSelectedWeek] = useState(weekOptions[2]);
+  const [startDate, setStartDate] = useState<Date>();
+  const [endDate, setEndDate] = useState<Date>();
   const [newPlan, setNewPlan] = useState({
-    week: '',
     goals: '',
     notes: '',
-    targetRevenue: '',
   });
 
   const handleAddPlan = () => {
-    if (!newPlan.week || !newPlan.goals) {
-      toast.error('Please fill in week and goals');
+    if (!startDate || !endDate || !newPlan.goals) {
+      toast.error('Please select dates and add goals');
       return;
     }
 
@@ -78,14 +109,16 @@ export default function PlansPage() {
     const plan = {
       id: `P${(plans.length + 1).toString().padStart(3, '0')}`,
       member: 'Current User',
-      week: newPlan.week,
+      startDate: format(startDate, 'yyyy-MM-dd'),
+      endDate: format(endDate, 'yyyy-MM-dd'),
       goals: goalsList,
       notes: newPlan.notes,
-      targetRevenue: parseInt(newPlan.targetRevenue) || 0,
     };
 
     setPlans([plan, ...plans]);
-    setNewPlan({ week: '', goals: '', notes: '', targetRevenue: '' });
+    setNewPlan({ goals: '', notes: '' });
+    setStartDate(undefined);
+    setEndDate(undefined);
     setIsDialogOpen(false);
     toast.success('Weekly plan created successfully!');
   };
@@ -119,50 +152,119 @@ export default function PlansPage() {
               Create Plan
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Create Weekly Plan</DialogTitle>
               <DialogDescription>
-                Set your goals and targets for the week
+                Set your goals and select the date range for your plan
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 mt-4">
+            <div className="space-y-5 mt-4">
               <div>
-                <Label>Week *</Label>
-                <Input
-                  value={newPlan.week}
-                  onChange={(e) => setNewPlan({ ...newPlan, week: e.target.value })}
-                  placeholder="e.g., Week 10, 2024"
-                />
+                <Label className="text-sm font-medium mb-2 block">Quick Select Week</Label>
+                <Select
+                  value={`${selectedWeek.start}_${selectedWeek.end}`}
+                  onValueChange={(value) => {
+                    const week = weekOptions.find(w => `${w.start}_${w.end}` === value);
+                    if (week) {
+                      setSelectedWeek(week);
+                      setStartDate(new Date(week.start));
+                      setEndDate(new Date(week.end));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a week" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {weekOptions.map((week, index) => (
+                      <SelectItem key={index} value={`${week.start}_${week.end}`}>
+                        {week.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Start Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !startDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? format(startDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">End Date *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !endDate && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {endDate ? format(endDate, "PPP") : "Pick a date"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={endDate}
+                        onSelect={setEndDate}
+                        initialFocus
+                        disabled={(date) => startDate ? date < startDate : false}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
               <div>
-                <Label>Goals * (one per line)</Label>
+                <Label className="text-sm font-medium mb-2 block">Goals * (one per line)</Label>
                 <Textarea
                   value={newPlan.goals}
                   onChange={(e) => setNewPlan({ ...newPlan, goals: e.target.value })}
                   placeholder="Enter your goals, one per line..."
-                  rows={5}
+                  rows={6}
+                  className="resize-none"
                 />
               </div>
+
               <div>
-                <Label>Target Revenue (KES)</Label>
-                <Input
-                  type="number"
-                  value={newPlan.targetRevenue}
-                  onChange={(e) => setNewPlan({ ...newPlan, targetRevenue: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <Label>Notes</Label>
+                <Label className="text-sm font-medium mb-2 block">Notes</Label>
                 <Textarea
                   value={newPlan.notes}
                   onChange={(e) => setNewPlan({ ...newPlan, notes: e.target.value })}
-                  placeholder="Additional notes..."
+                  placeholder="Additional notes or context for this plan..."
                   rows={3}
+                  className="resize-none"
                 />
               </div>
-              <Button onClick={handleAddPlan} className="w-full">
+
+              <Button onClick={handleAddPlan} className="w-full h-11">
+                <Plus className="h-4 w-4 mr-2" />
                 Create Plan
               </Button>
             </div>
@@ -185,7 +287,9 @@ export default function PlansPage() {
                       <CalendarIcon className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl">{plan.week}</CardTitle>
+                      <CardTitle className="text-xl">
+                        {format(new Date(plan.startDate), 'MMM d')} - {format(new Date(plan.endDate), 'MMM d, yyyy')}
+                      </CardTitle>
                       <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
                         <User className="h-4 w-4" />
                         <span>{plan.member}</span>
@@ -197,11 +301,6 @@ export default function PlansPage() {
                       <span className="text-2xl font-bold text-emerald-600">{completionRate}%</span>
                       <span className="text-sm text-gray-600">Complete</span>
                     </div>
-                    {plan.targetRevenue > 0 && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        Target: KES {(plan.targetRevenue / 1000).toFixed(0)}K
-                      </p>
-                    )}
                   </div>
                 </div>
               </CardHeader>

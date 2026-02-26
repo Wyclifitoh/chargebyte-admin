@@ -119,7 +119,7 @@ const menuItems = [
     title: "Activations",
     href: "/activations",
     icon: MapPin,
-    roles: ["super_admin", "admin", "staff"],
+    roles: ["super_admin", "admin"],
     items: [
       {
         title: "Activation Records",

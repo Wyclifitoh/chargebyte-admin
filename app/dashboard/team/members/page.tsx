@@ -5,7 +5,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +38,11 @@ import {
   Calendar,
   Award,
   TrendingUp,
+  Filter,
+  Download,
+  Eye,
+  FileText,
+  User,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -85,7 +104,12 @@ const mockTeamMembers = [
 
 export default function TeamMembersPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [newMember, setNewMember] = useState({
     name: '',
     email: '',
@@ -103,6 +127,29 @@ export default function TeamMembersPage() {
     setNewMember({ name: '', email: '', phone: '', role: 'Field Agent', location: '' });
     setIsAddDialogOpen(false);
   };
+
+  const handleExport = () => {
+    toast.success('Team members data exported successfully!');
+  };
+
+  const handleViewProfile = (member: any) => {
+    setSelectedMember(member);
+    setIsProfileDialogOpen(true);
+  };
+
+  const handleViewReport = (member: any) => {
+    setSelectedMember(member);
+    setIsReportDialogOpen(true);
+  };
+
+  const filteredMembers = mockTeamMembers.filter((member) => {
+    const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         member.location.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || member.status === statusFilter;
+    const matchesRole = roleFilter === 'all' || member.role === roleFilter;
+    return matchesSearch && matchesStatus && matchesRole;
+  });
 
   return (
     <div className="space-y-6">
@@ -244,134 +291,312 @@ export default function TeamMembersPage() {
         </Card>
       </div>
 
-      {/* Search and Filters */}
+      {/* Team Table */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle>Team Directory</CardTitle>
-            <div className="relative w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search members..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search members..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="Field Agent">Field Agent</SelectItem>
+                  <SelectItem value="Sales Manager">Sales Manager</SelectItem>
+                  <SelectItem value="Team Lead">Team Lead</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="all" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="all">All Members</TabsTrigger>
-              <TabsTrigger value="active">Active</TabsTrigger>
-              <TabsTrigger value="on_leave">On Leave</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="all" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {mockTeamMembers.map((member) => (
-                  <Card key={member.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                          <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead className="text-center">Performance</TableHead>
+                  <TableHead className="text-center">Leads</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredMembers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+                      No team members found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredMembers.map((member) => (
+                    <TableRow key={member.id} className="hover:bg-gray-50">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                             {member.name.split(' ').map(n => n[0]).join('')}
                           </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900">{member.name}</h3>
-                            <Badge
-                              variant={member.status === 'active' ? 'default' : 'secondary'}
-                              className={member.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}
-                            >
-                              {member.status.replace('_', ' ')}
-                            </Badge>
-                          </div>
-
-                          <p className="text-sm font-medium text-emerald-600 mb-3">{member.role}</p>
-
-                          <div className="space-y-2 text-sm text-gray-600">
-                            <div className="flex items-center gap-2">
-                              <Mail className="h-4 w-4" />
-                              <span>{member.email}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4" />
-                              <span>{member.phone}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="h-4 w-4" />
-                              <span>{member.location}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4" />
-                              <span>Joined {new Date(member.joinDate).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 pt-4 border-t border-gray-200">
-                            <div className="grid grid-cols-3 gap-4 text-center">
-                              <div>
-                                <p className="text-xs text-gray-500">Performance</p>
-                                <p className="text-lg font-bold text-emerald-600">{member.performance}%</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Activations</p>
-                                <p className="text-lg font-bold text-blue-600">{member.activations}</p>
-                              </div>
-                              <div>
-                                <p className="text-xs text-gray-500">Conversions</p>
-                                <p className="text-lg font-bold text-purple-600">{member.leadsConverted}</p>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 flex gap-2">
-                            <Button variant="outline" size="sm" className="flex-1">
-                              View Profile
-                            </Button>
-                            <Button variant="outline" size="sm" className="flex-1">
-                              View Reports
-                            </Button>
+                          <div>
+                            <p className="font-medium text-gray-900">{member.name}</p>
+                            <p className="text-sm text-gray-500">
+                              Joined {new Date(member.joinDate).toLocaleDateString()}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="active">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {mockTeamMembers.filter(m => m.status === 'active').map((member) => (
-                  <Card key={member.id}>
-                    <CardContent className="p-4">
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-sm text-gray-600">{member.role}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="on_leave">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {mockTeamMembers.filter(m => m.status === 'on_leave').map((member) => (
-                  <Card key={member.id}>
-                    <CardContent className="p-4">
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-sm text-gray-600">{member.role}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                          {member.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <MapPin className="h-4 w-4" />
+                          {member.location}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Mail className="h-3.5 w-3.5" />
+                            <span className="truncate max-w-[180px]">{member.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <Phone className="h-3.5 w-3.5" />
+                            {member.phone}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="inline-flex items-center justify-center">
+                          <div className={`text-lg font-bold ${
+                            member.performance >= 90 ? 'text-green-600' :
+                            member.performance >= 80 ? 'text-blue-600' :
+                            'text-orange-600'
+                          }`}>
+                            {member.performance}%
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm font-medium text-gray-900">
+                          {member.leadsConverted}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={member.status === 'active' ? 'default' : 'secondary'}
+                          className={member.status === 'active'
+                            ? 'bg-green-100 text-green-700 border-green-200'
+                            : 'bg-gray-100 text-gray-700 border-gray-200'}
+                        >
+                          {member.status.replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewProfile(member)}
+                            className="h-8"
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Profile
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewReport(member)}
+                            className="h-8"
+                          >
+                            <FileText className="h-4 w-4 mr-1" />
+                            Report
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
+
+      {/* View Profile Dialog */}
+      <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Team Member Profile</DialogTitle>
+          </DialogHeader>
+          {selectedMember && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-4">
+                <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                  {selectedMember.name.split(' ').map((n: string) => n[0]).join('')}
+                </div>
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedMember.name}</h3>
+                  <p className="text-emerald-600 font-medium">{selectedMember.role}</p>
+                  <Badge className={selectedMember.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}>
+                    {selectedMember.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Email</p>
+                    <p className="font-medium text-gray-900">{selectedMember.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Phone</p>
+                    <p className="font-medium text-gray-900">{selectedMember.phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Location</p>
+                    <p className="font-medium text-gray-900">{selectedMember.location}</p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Join Date</p>
+                    <p className="font-medium text-gray-900">
+                      {new Date(selectedMember.joinDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Performance Score</p>
+                    <p className="font-medium text-emerald-600 text-2xl">{selectedMember.performance}%</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 mb-1">Total Activations</p>
+                  <p className="text-2xl font-bold text-blue-600">{selectedMember.activations}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 mb-1">Leads Converted</p>
+                  <p className="text-2xl font-bold text-purple-600">{selectedMember.leadsConverted}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-gray-500 mb-1">Conversion Rate</p>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {Math.round((selectedMember.leadsConverted / selectedMember.activations) * 100)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Report Dialog */}
+      <Dialog open={isReportDialogOpen} onOpenChange={setIsReportDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Performance Report</DialogTitle>
+            <DialogDescription>
+              {selectedMember?.name} - {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedMember && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-4 gap-4">
+                <Card className="border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">Activations</p>
+                    <p className="text-2xl font-bold text-gray-900">{selectedMember.activations}</p>
+                    <p className="text-xs text-green-600 mt-1">+12% from last month</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-purple-500">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">Conversions</p>
+                    <p className="text-2xl font-bold text-gray-900">{selectedMember.leadsConverted}</p>
+                    <p className="text-xs text-green-600 mt-1">+8% from last month</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-emerald-500">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">Performance</p>
+                    <p className="text-2xl font-bold text-gray-900">{selectedMember.performance}%</p>
+                    <p className="text-xs text-green-600 mt-1">+5% from last month</p>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-orange-500">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">Revenue</p>
+                    <p className="text-2xl font-bold text-gray-900">KES 45K</p>
+                    <p className="text-xs text-green-600 mt-1">+15% from last month</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3">Recent Activity</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">New client onboarding - Westgate Mall</span>
+                    <span className="text-xs text-gray-500">2 days ago</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Station maintenance - CBD Location</span>
+                    <span className="text-xs text-gray-500">5 days ago</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <span className="text-sm text-gray-600">Lead conversion - Tech Startup</span>
+                    <span className="text-xs text-gray-500">1 week ago</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => toast.success('Report downloaded!')}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Full Report
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
